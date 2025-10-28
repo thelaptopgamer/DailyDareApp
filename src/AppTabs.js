@@ -8,7 +8,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
 
 const Tab = createBottomTabNavigator();
-//what is up big dawg?
+//what is up big dawg?ufhudhfhauidfhauidhf
 const AppTabs = () => {
   return (
     <Tab.Navigator

@@ -41,7 +41,7 @@ export default function App() {
         // Assigns a new dare if none is assigned for today, or returns the existing one
         assignDailyDare();
     }
-  }, [user]); // Dependency array: runs when 'user' state is updated
+  }, [user]); // Dependency array: runs when 'user'
 
   if (initializing) {
     return (
