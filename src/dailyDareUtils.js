@@ -23,7 +23,7 @@ const assignDailyDare = async () => {
         const userDoc = await getDoc(userDocRef);
         let userData = userDoc.data();
         
-        // --- FIX FOR MULTI-ACCOUNT LOGIN ERROR ---
+        // FIX FOR MULTI-ACCOUNT LOGIN ERROR
         if (!userDoc.exists()) {
             // Document does not exist: Create it now with defaults
             userData = {
@@ -53,16 +53,16 @@ const assignDailyDare = async () => {
                  });
              }
         }
-        // --- END FIX ---
 
 
-        // 1. Check if dares are already assigned for today
+
+        // Check if dares are already assigned for today
         if (userData?.dailyDares?.length > 0 && userData.dailyDares[0].assignedDate === todayDate) {
             console.log("3 Daily Dares already assigned for today.");
             return userData.dailyDares;
         }
 
-        // 2. Fetch all available dares
+        // Fetch all available dares
         const daresRef = collection(db, "Dares");
         const dareSnapshot = await getDocs(daresRef);
 
@@ -76,7 +76,7 @@ const assignDailyDare = async () => {
             ...doc.data()
         }));
 
-        // 3. Select 3 unique random dares
+        // Select 3 unique random dares
         const newDailyDares = [];
         const selectedIndices = new Set();
         
@@ -97,7 +97,7 @@ const assignDailyDare = async () => {
             }
         }
 
-        // 4. Update the user's document in Firestore with the new array
+        // Update the user's document in Firestore with the new array
         await updateDoc(userDocRef, {
             dailyDares: newDailyDares, 
             lastDareAssignment: todayDate,
@@ -112,7 +112,7 @@ const assignDailyDare = async () => {
     }
 };
 
-// ... (completeDailyDare, rerollDailyDare, useSkipToGainReroll remain the same) ...
+// completeDailyDare, rerollDailyDare, useSkipToGainReroll remain the same
 const completeDailyDare = async (dareId, points) => {
     const user = auth.currentUser;
     if (!user || !dareId) return false;

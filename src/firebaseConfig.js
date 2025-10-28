@@ -11,7 +11,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage'; 
 
-// Your unique web app's Firebase configuration
+//Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCPsItrAaf-oYTj7QuUAvnvfqwhFkCBUOI",
   authDomain: "daily-dare-app-c6173.firebaseapp.com",
@@ -25,7 +25,6 @@ const firebaseConfig = {
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// CRITICAL FIX: Initialize Auth using the React Native method with AsyncStorage
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 }); 

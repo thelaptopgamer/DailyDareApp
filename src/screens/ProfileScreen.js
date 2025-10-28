@@ -12,7 +12,7 @@ const ProfileScreen = () => {
 
     const userEmail = auth.currentUser?.email;
 
-    // Step 30: Fetch user data (score) in real-time
+    // Fetch user data (score) in real-time
     useEffect(() => {
         const user = auth.currentUser;
         if (!user) {
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 30,
     },
-    // Generic Info Card Style
+    // Info Card
     infoCard: {
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    // Score Card Style (matching the DareHub clean look)
+    // Score Card
     scoreCard: {
         backgroundColor: '#E6F0FF',
         borderRadius: 12,

@@ -6,12 +6,12 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 
 export default function SignupScreen({ navigation }) {
-  // Step 6: Implement State for User Input
+  // Implement State for User Input
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Step 14: Define the sign-up function using Firebase
+  // Define the sign-up function using Firebase
   const handleSignUp = async () => {
     if (password.length < 6) {
         Alert.alert("Error", "Password must be at least 6 characters long.");
@@ -23,7 +23,7 @@ export default function SignupScreen({ navigation }) {
     }
 
     try {
-        // 1. Create the user in Firebase Authentication
+        // Create the user in Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(
             auth,
             email,
@@ -31,7 +31,7 @@ export default function SignupScreen({ navigation }) {
         );
         const user = userCredential.user;
         
-        // 2. Step 17 requirement: Create initial user data in Firestore (Users Collection)
+        // Create initial user data in Firestore (Users Collection)
         await setDoc(doc(db, "Users", user.uid), {
             uid: user.uid,
             email: user.email,
@@ -43,7 +43,7 @@ export default function SignupScreen({ navigation }) {
         });
 
         console.log("User account created and profile saved:", user.email);
-        // The App.js listener (Step 15) handles the navigation to the main tabs automatically.
+        // The App.js listener handles the navigation to the main tabs automatically.
         
     } catch (error) {
         // Display any Firebase errors (e.g., email already in use, invalid email format)
@@ -53,7 +53,7 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    // Step 7: Basic Flexbox Styling
+    // Flexbox Styling
     <View style={styles.container}>
       <Text style={styles.title}>Create Your Account</Text>
 

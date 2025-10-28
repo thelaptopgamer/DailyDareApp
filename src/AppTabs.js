@@ -3,7 +3,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
-// Renamed DashboardScreen to DareHubScreen for clarity and consistency
 import DareHubScreen from './screens/DareHubScreen'; 
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
@@ -28,7 +27,7 @@ const AppTabs = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF', // Blue tint for active icon
+        tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
       })}
     >

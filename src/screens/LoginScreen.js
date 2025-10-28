@@ -5,11 +5,11 @@ import { auth } from '../firebaseConfig'; // Import the Firebase auth object
 import { signInWithEmailAndPassword } from 'firebase/auth'; // Import the Firebase sign-in function
 
 export default function LoginScreen({ navigation }) {
-  // Step 6: Implement State for User Input
+  // State for User Input
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Step 14: Define the sign-in function using Firebase
+  // Defines sign-in function using Firebase
   const handleLogin = async () => {
     try {
         await signInWithEmailAndPassword(
@@ -18,16 +18,15 @@ export default function LoginScreen({ navigation }) {
             password
         );
         console.log("User logged in:", email);
-        // The App.js listener (Step 15) handles the navigation switch automatically.
+     
     } catch (error) {
-        // Display any Firebase errors (e.g., wrong password, user not found)
         Alert.alert("Login Error", error.message);
         console.error("Login Error:", error.message);
     }
   };
 
   return (
-    // Step 7: Basic Flexbox Styling
+    //Flexbox Styling
     <View style={styles.container}>
       <Text style={styles.title}>Daily Dare App</Text>
 

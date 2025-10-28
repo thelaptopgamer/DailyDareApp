@@ -48,7 +48,6 @@ const CommunityScreen = () => {
             setLeaderboard(leaders);
         } catch (error) {
             console.error("Error fetching leaderboard:", error);
-            // Optionally set an error state here
         } finally {
             setLoading(false);
         }
@@ -150,17 +149,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     currentUserItem: {
-        backgroundColor: '#E6F0FF', // Light blue background for the current user
+        backgroundColor: '#E6F0FF',
         borderWidth: 1,
         borderColor: '#007AFF',
     },
     rankText: {
         fontSize: 16,
         color: '#333',
-        width: 50, // Fixed width for Rank column
+        width: 50,
     },
     nameText: {
-        flex: 1, // Takes up remaining space
+        flex: 1,
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
@@ -168,8 +167,8 @@ const styles = StyleSheet.create({
     scoreText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#007AFF', // Primary color for scores
-        minWidth: 80, // Minimum width for Score column
+        color: '#007AFF', // Primary color scores
+        minWidth: 80,
         textAlign: 'right',
     },
     emptyText: {

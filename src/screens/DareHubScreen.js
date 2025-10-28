@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context'; 
 import { db, auth } from '../firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
-import * as Haptics from 'expo-haptics'; // <-- NEW IMPORT
+import * as Haptics from 'expo-haptics';
 import { completeDailyDare, rerollDailyDare, useSkipToGainReroll } from '../dailyDareUtils'; 
 
 const DareHubScreen = () => {
@@ -13,7 +13,6 @@ const DareHubScreen = () => {
     const [rerollCount, setRerollCount] = useState(0); 
     const [loading, setLoading] = useState(true);
     
-    // ... (useEffect remains the same) ...
     useEffect(() => {
         const user = auth.currentUser;
         if (!user) {
@@ -45,7 +44,6 @@ const DareHubScreen = () => {
         return () => unsubscribe();
     }, []); 
 
-    // Completion handler is updated to pass ID and Points
     const handleComplete = (dareId, points) => async () => {
          Alert.alert(
             "Confirm Completion", 
@@ -58,10 +56,10 @@ const DareHubScreen = () => {
                         const success = await completeDailyDare(dareId, points);
                         
                         if (success) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // <-- HAPTIC SUCCESS
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                             Alert.alert("Dare Completed!", `You earned ${points} points!`);
                         } else {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); // <-- HAPTIC ERROR
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
                             Alert.alert("Error", "Could not mark dare as complete or it was already completed.");
                         }
                     },
@@ -90,10 +88,10 @@ const DareHubScreen = () => {
                         const result = await rerollDailyDare(dareId);
                         
                         if (result.success) {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); // <-- HAPTIC IMPACT
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                             Alert.alert("Success!", result.message);
                         } else {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); // <-- HAPTIC ERROR
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
                             Alert.alert("Reroll Failed", result.message);
                         }
                     },
@@ -115,7 +113,7 @@ const DareHubScreen = () => {
                     onPress: async () => {
                         const result = await useSkipToGainReroll();
                         if (result.success) {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // <-- HAPTIC IMPACT
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); 
                             Alert.alert("Success!", result.message);
                         } else {
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -144,7 +142,6 @@ const DareHubScreen = () => {
         );
     }
 
-    // ... (The rest of the component remains the same) ...
     return (
         <SafeAreaView style={styles.safeArea}> 
             <ScrollView style={styles.scrollViewContainer}>
