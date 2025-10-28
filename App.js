@@ -1,6 +1,6 @@
 // App.js
 
-// CRITICAL FIXES: Ensure Firebase modules are registered early
+// Ensure Firebase modules are registered early
 import 'firebase/auth'; 
 import 'firebase/firestore'; 
 
@@ -11,7 +11,7 @@ import AuthStack from './src/AuthStack';
 import AppTabs from './src/AppTabs';
 import { auth } from './src/firebaseConfig';
 import { seedDares } from './src/firestoreUtils.js';
-import { assignDailyDare } from './src/dailyDareUtils.js'; // <-- NEW IMPORT
+import { assignDailyDare } from './src/dailyDareUtils.js';
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -34,7 +34,7 @@ export default function App() {
     return subscriber; 
   }, []);
 
-  // NEW: Assign Dare after the user logs in
+  // Assign Dare after the user logs in
   useEffect(() => {
     // This hook runs whenever the 'user' object changes or is set
     if (user) {
