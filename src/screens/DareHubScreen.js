@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
+// src/screens/DareHubScreen.js
+// Purpose: Displays the user's daily dares, score, and handles interactions (Complete/Reroll).
+
+import React, { useState, useEffect } from 'react'; // Imports React and core hooks (Lecture 3)
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; 
 import { db, auth } from '../firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
-import * as Haptics from 'expo-haptics';
+import { doc, onSnapshot } from 'firebase/firestore'; // Real-time listener (Lecture 6)
+import * as Haptics from 'expo-haptics'; // Haptic Feedback for UX polish
 import { completeDailyDare, rerollDailyDare, useSkipToGainReroll } from '../dailyDareUtils'; 
 
 const DareHubScreen = () => {
+    // STATE: Manages data received from Firestore (useState hook - Lecture 3)
     const [dailyDares, setDailyDares] = useState([]); 
     const [score, setScore] = useState(0); 
     const [rerollTokens, setRerollTokens] = useState(0); 
     const [loading, setLoading] = useState(true);
     
-    //Listen for the user's data and trigger seeding
+    // SIDE EFFECT: Listens to Firestore for user data changes (useEffect hook - Lecture 4)
     useEffect(() => {
         const user = auth.currentUser;
         
@@ -23,10 +27,12 @@ const DareHubScreen = () => {
 
         const userDocRef = doc(db, 'Users', user.uid);
         
+        // onSnapshot: Sets up a real-time listener for the user's document
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const userData = docSnap.data();
                 
+                // Update state with live data (real-time score/dare updates)
                 setDailyDares(userData.dailyDares || []); 
                 setScore(userData.score || 0); 
                 setRerollTokens(userData.rerollTokens || 0); 
@@ -42,10 +48,11 @@ const DareHubScreen = () => {
             Alert.alert("Error", "Could not fetch your daily dare data.");
         });
 
+        // CLEANUP: Stops the listener when the component unmounts
         return () => unsubscribe();
     }, []);
 
-    // Completion handler
+    // ASYNC FUNCTION: Completion handler
     const handleComplete = (dareId, points) => async () => {
          Alert.alert(
             "Confirm Completion", 
@@ -55,7 +62,7 @@ const DareHubScreen = () => {
                 { 
                     text: "Complete", 
                     onPress: async () => {
-                        const success = await completeDailyDare(dareId, points);
+                        const success = await completeDailyDare(dareId, points); // Await the Firestore update
                         
                         if (success) {
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -71,7 +78,7 @@ const DareHubScreen = () => {
         );
     };
 
-    //Reroll handler: Handles free token use OR point purchase
+    // ASYNC FUNCTION: Reroll handler (Handles free token use OR point purchase)
     const handleReroll = (dareId) => async () => {
         const REROLL_COST = 50; 
         
@@ -86,7 +93,7 @@ const DareHubScreen = () => {
             message = `You have 0 free tokens. Do you want to purchase a reroll for ${REROLL_COST} points?`;
             buttonText = `Pay ${REROLL_COST} Points`;
         } else {
-            //Backup fail
+            // Backup fail
             Alert.alert("Reroll Failed", `You need ${REROLL_COST} points or a free token to reroll.`);
             return;
         }
@@ -115,7 +122,7 @@ const DareHubScreen = () => {
         );
     };
 
-    //Skip/Reroll Exchange Handler
+    // Skip/Reroll Exchange Handler
     const handleSkip = async () => {
         Alert.alert(
             "Use Skip Token", 
@@ -140,6 +147,7 @@ const DareHubScreen = () => {
         );
     };
 
+    // CONDITIONAL RENDERING: Shows loading state
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -148,6 +156,7 @@ const DareHubScreen = () => {
         );
     }
     
+    // CONDITIONAL RENDERING: Shows empty state
     if (dailyDares.length === 0) {
         return (
             <View style={styles.loadingContainer}>
@@ -156,11 +165,12 @@ const DareHubScreen = () => {
         );
     }
 
-    //RENDER FUNCTION
+    // FINAL RENDER: Main Dashboard Content
     return (
         <SafeAreaView style={styles.safeArea}> 
             <ScrollView style={styles.scrollViewContainer}>
                 
+                {/* Score Card Display */}
                 <View style={styles.scoreCard}>
                     <Text style={styles.scoreLabel}>Total Score</Text>
                     <Text style={styles.scoreValue}>🏆 {score} Points</Text>
@@ -168,7 +178,7 @@ const DareHubScreen = () => {
                 
                 <Text style={styles.header}>Today's Challenges ({dailyDares.length})</Text>
 
-                {/* RENDER DARE CARDS FROM ARRAY */}
+                {/* RENDER DARE CARDS FROM ARRAY (Using .map() - Lecture 3) */}
                 {dailyDares.map((dare, index) => (
                     <View 
                         key={index}
@@ -196,6 +206,7 @@ const DareHubScreen = () => {
                                     <Text style={styles.buttonText}>Complete Dare</Text>
                                 </TouchableOpacity>
                                 
+                                {/* REROLL BUTTON (Disabled logic) */}
                                 <TouchableOpacity 
                                     style={[styles.rerollButton, rerollTokens === 0 && score < 50 && styles.rerollDisabled]} 
                                     onPress={handleReroll(dare.dareId)} 
@@ -208,12 +219,20 @@ const DareHubScreen = () => {
                     </View>
                 ))}
                 
+                {/* Skip/Reroll Info (Hidden, but keeping code structure) */}
+                {/* <View style={styles.localInfo}>
+                    <Text style={styles.localInfoText}>You have {rerollTokens} free daily tokens.</Text>
+                    <TouchableOpacity onPress={handleSkip}>
+                        <Text style={styles.skipButton}>Use a Skip (+1 Token)</Text>
+                    </TouchableOpacity>
+                </View> */}
 
             </ScrollView>
         </SafeAreaView> 
     );
 };
 
+// STYLESHEET: Uses Flexbox properties for centering and layout (Lecture 3)
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,

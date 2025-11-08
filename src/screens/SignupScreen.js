@@ -1,45 +1,53 @@
 // src/screens/SignupScreen.js
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore'; 
-import { auth, db } from '../firebaseConfig';
-import { useNavigation } from '@react-navigation/native';
-import { assignDailyDare } from '../dailyDareUtils';
+// Purpose: Handles user sign-up, creates the Firebase Auth record, and initializes the user's Firestore profile.
+
+import React, { useState } from 'react'; // Imports React and the useState hook (IAT359_Week3, Page 36)
+import { 
+    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator 
+} from 'react-native'; // Imports core components (IAT359_Week3, Page 51-52)
+import { createUserWithEmailAndPassword } from 'firebase/auth'; // Firebase Auth method (IAT359_Lecture6, Page 24)
+import { doc, setDoc } from 'firebase/firestore'; // Firestore CRUD methods (IAT359_Lecture6, Page 30)
+import { auth, db } from '../firebaseConfig'; // Your Firebase connection objects
+import { useNavigation } from '@react-navigation/native'; // Hook for navigation
+import { assignDailyDare } from '../dailyDareUtils'; // Function to assign the 3 daily dares
 
 const SignupScreen = () => {
+    // STATE: Manages user input and UI loading status
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
+    // ASYNC FUNCTION: Handles the entire sign-up process (IAT359_Week3, Page 45)
     const handleSignup = async () => {
         if (!email || !password) {
-            Alert.alert("Error", "Please fill in all fields (Email and Password).");
+            Alert.alert("Error", "Please fill in all fields.");
             return;
         }
 
         setLoading(true);
+        // TRY/CATCH: Used for robust error handling of async operations (IAT359_Lecture7, Page 13)
         try {
-            //Create user in Firebase Authentication
+            // 1. FIREBASE AUTHENTICATION: Creates the user's secure login record
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            //Create the corresponding user document in Firestore
+            // 2. FIRESTORE: Creates the user's data document (Collections/Documents - IAT359_Lecture6, Page 30)
             const userDocRef = doc(db, 'Users', user.uid);
             await setDoc(userDocRef, {
                 email: user.email,
                 score: 0,
-                rerollTokens: 2,
+                rerollTokens: 2, 
                 daresCompletedCount: 0,
                 createdAt: new Date().toISOString(),
                 dailyDares: [],
-                onboardingComplete: false,
+                onboardingComplete: false, // User must go through FTUE
             });
             
+            // 3. FINAL SETUP: Assigns the 3 unique dares (Required for first-time signups)
             await assignDailyDare(); 
             
-            console.log("User signed up and dares assigned success.");
+            console.log("User signed up and profile initialized.");
 
         } catch (error) {
             Alert.alert("Signup Failed", error.message);
@@ -50,15 +58,16 @@ const SignupScreen = () => {
     };
 
     return (
+        // FLEXBOX: ScrollView allows content to scroll and uses flexGrow: 1
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Create Your DareHub Account</Text>
 
-            {/* EMAIL INPUT */}
+            {/* EMAIL INPUT (Core Component - IAT359_Week3, Page 51-52) */}
             <TextInput
                 style={styles.input}
                 placeholder="Email" 
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={setEmail} // Updates 'email' state
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="#A0A0A0"
@@ -69,17 +78,18 @@ const SignupScreen = () => {
                 style={styles.input}
                 placeholder="Password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={setPassword} // Updates 'password' state
                 secureTextEntry
                 placeholderTextColor="#A0A0A0"
             />
 
             {/* SIGN UP BUTTON */}
             <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
+                {/* Ternary Operator: Show spinner if loading */}
                 <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Sign Up'}</Text>
             </TouchableOpacity>
             
-            {/* GO TO LOGIN */}
+            {/* NAVIGATION LINK */}
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.loginText}>Already have an account? Login</Text>
             </TouchableOpacity>
@@ -87,6 +97,7 @@ const SignupScreen = () => {
     );
 };
 
+// STYLESHEET: Centralized styling using JavaScript objects (IAT359_Week3, Page 22)
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,

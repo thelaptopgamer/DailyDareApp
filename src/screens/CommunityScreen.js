@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react'; 
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+// src/screens/CommunityScreen.js
+// Purpose: Fetches user scores, ranks them for the Global Leaderboard, and implements search functionality (Step 47).
+
+import React, { useState, useEffect, useCallback } from 'react'; // Imports React and essential hooks
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native'; // Imports core components (IAT359_Week3)
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db, auth } from '../firebaseConfig';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { Ionicons } from '@expo/vector-icons'; 
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore'; // Firestore read methods (Lecture 6)
+import { Ionicons } from '@expo/vector-icons'; // Vector icons
 
-//Simple debouncing function to limit fetching/filtering while typing
+// Debouncing Logic: Utility hook to delay search filtering until user stops typing
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -15,12 +18,13 @@ const useDebounce = (value, delay) => {
         return () => {
             clearTimeout(handler);
         };
-    }, [value, delay]);
+    }, [value, delay]); // Reruns when 'value' changes
     return debouncedValue;
 };
 
 
 const CommunityScreen = () => {
+    // STATE: Stores the current leaderboard display and the full list of users
     const [leaderboard, setLeaderboard] = useState([]);
     const [allUsers, setAllUsers] = useState([]); 
     const [loading, setLoading] = useState(true);
@@ -28,27 +32,29 @@ const CommunityScreen = () => {
     
     const debouncedSearchText = useDebounce(searchText, 500); 
 
+    // ASYNC FUNCTION: Fetches the top users from Firestore for the leaderboard
     const fetchLeaderboard = useCallback(async () => {
         setLoading(true);
         try {
+            // FIRESTORE QUERY: Gets users ordered by score (orderBy, limit - Lecture 6)
             const q = query(
                 collection(db, 'Users'),
                 orderBy('score', 'desc'),
-                limit(200) //Fetch a wide range of users for search
+                limit(200) // Fetches a wide range for searching
             );
 
-            const querySnapshot = await getDocs(q);
+            const querySnapshot = await getDocs(q); // Await the data fetch
             const users = [];
             
             querySnapshot.forEach((doc) => {
                 const userData = doc.data();
                 
-                //Reverted Logic: Use email prefix as the display name
+                // Logic: Use email prefix as the display name (simple fallback)
                 let displayName; 
                 const emailParts = userData.email ? userData.email.split('@') : [doc.id.substring(0, 8), ''];
                 displayName = emailParts[0]; 
                 
-                //Only include users with points (score > 0)
+                // Only include users with points
                 if (userData.score > 0) {
                     users.push({
                         id: doc.id,
@@ -58,7 +64,7 @@ const CommunityScreen = () => {
                 }
             });
 
-            //Set all users and calculate the initial leaderboard (top 50)
+            // Update state: Store all users and display the initial top 50
             setAllUsers(users);
             setLeaderboard(users.slice(0, 50).map((user, index) => ({ ...user, rank: index + 1 })));
 
@@ -69,7 +75,7 @@ const CommunityScreen = () => {
         }
     }, []);
     
-    //Function to apply the search filter
+    // Function to apply the search filter (Runs locally, reducing Firestore calls)
     const filterAndRankUsers = useCallback((query) => {
         if (!query) {
             return allUsers.slice(0, 50).map((user, index) => ({ ...user, rank: index + 1 }));
@@ -77,31 +83,31 @@ const CommunityScreen = () => {
 
         const lowerCaseQuery = query.toLowerCase();
         
-        //Filter users based on display name containing the search query
+        // JAVASCRIPT ARRAY METHOD: Filter users based on display name
         const filteredUsers = allUsers.filter(user => 
             user.displayName.toLowerCase().includes(lowerCaseQuery)
         );
 
-        //Re-rank the filtered users starting from 1
+        // Re-rank the filtered users starting from 1
         return filteredUsers.map((user, index) => ({
             ...user,
             rank: index + 1
         }));
     }, [allUsers]);
 
-    //Effect to run the search when the debounced search text changes
+    // SIDE EFFECT: Runs the search filter whenever the debounced search text changes
     useEffect(() => {
         const filteredList = filterAndRankUsers(debouncedSearchText);
         setLeaderboard(filteredList);
     }, [debouncedSearchText, filterAndRankUsers]);
 
 
-    //Initial data load effect
+    // SIDE EFFECT: Initial data load (Runs once on mount - empty dependency array logic)
     useEffect(() => {
         fetchLeaderboard();
     }, [fetchLeaderboard]);
     
-    //Component for a single leaderboard item
+    // Component for a single leaderboard item (used by FlatList)
     const renderLeaderItem = ({ item }) => {
         const isCurrentUser = auth.currentUser.uid === item.id;
         
@@ -117,7 +123,7 @@ const CommunityScreen = () => {
         );
     };
 
-
+    // CONDITIONAL RENDERING: Shows loading state
     if (loading && allUsers.length === 0) {
         return (
             <View style={styles.loadingContainer}>
@@ -132,7 +138,7 @@ const CommunityScreen = () => {
             <View style={styles.container}>
                 <Text style={styles.header}>Global Leaderboard</Text>
                 
-                {/* SEARCH INPUT */}
+                {/* SEARCH INPUT (Core Component: TextInput) */}
                 <View style={styles.searchContainer}>
                     <Ionicons name="search-outline" size={20} color="#777" style={styles.searchIcon} />
                     <TextInput
@@ -144,12 +150,14 @@ const CommunityScreen = () => {
                     />
                 </View>
 
+                {/* List Headers */}
                 <View style={styles.listHeader}>
                     <Text style={[styles.rankText, { fontWeight: 'bold' }]}>Rank</Text>
                     <Text style={[styles.nameText, { fontWeight: 'bold' }]}>Player</Text>
                     <Text style={[styles.scoreText, { fontWeight: 'bold' }]}>Score</Text>
                 </View>
 
+                {/* FLATLIST: Performant list rendering (IAT359_Week3, Page 33) */}
                 <FlatList
                     data={leaderboard}
                     renderItem={renderLeaderItem}
@@ -162,6 +170,7 @@ const CommunityScreen = () => {
     );
 };
 
+// STYLESHEET: Uses Flexbox properties for layout (IAT359_Week3, Page 27-30)
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
@@ -182,7 +191,7 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 20,
     },
-    //STYLES FOR SEARCH INPUT
+    // STYLES FOR SEARCH INPUT
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -202,7 +211,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-    //END SEARCH STYLES
+    // END SEARCH STYLES
     listHeader: {
         flexDirection: 'row',
         paddingVertical: 10,
@@ -228,7 +237,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     currentUserItem: {
-        backgroundColor: '#E6F0FF',
+        backgroundColor: '#E6F0FF', 
         borderWidth: 1,
         borderColor: '#007AFF',
     },

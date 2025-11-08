@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+// src/screens/OnboardingScreen.js
+// Purpose: Implements the First Time User Experience (FTUE) with a multi-step questionnaire and overview.
+// This screen runs conditionally, based on the 'onboardingComplete' field in Firestore.
+
+import React, { useState } from 'react'; // Imports React and useState hook (Lecture 3)
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db, auth } from '../firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore'; // Firestore write method (Lecture 6)
 
 const OnboardingScreen = () => {
+    // STATE: Tracks the current step in the questionnaire flow
     const [step, setStep] = useState(1); 
     const [loading, setLoading] = useState(false);
     const totalSteps = 3; 
 
-    //Function to mark onboarding as complete in Firestore
+    // ASYNC FUNCTION: Marks onboarding as complete in the user's Firestore profile
     const finishOnboarding = async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -18,6 +23,7 @@ const OnboardingScreen = () => {
         const userDocRef = doc(db, 'Users', user.uid);
         
         try {
+            // FIRESTORE UPDATE: Sets the 'onboardingComplete' flag to true
             await updateDoc(userDocRef, {
                 onboardingComplete: true,
             });
@@ -30,8 +36,7 @@ const OnboardingScreen = () => {
         }
     };
 
-    // Content for each step
-
+    // --- Render Content Based on Step (Conditional Rendering) ---
     const renderQuestionnaire = () => {
         if (step === 1) {
             return (
@@ -70,18 +75,21 @@ const OnboardingScreen = () => {
                 {renderQuestionnaire()}
 
                 <View style={styles.buttonRow}>
+                    {/* BACK Button */}
                     {step > 1 && (
                         <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)} disabled={loading}>
                             <Text style={styles.backButtonText}>Back</Text>
                         </TouchableOpacity>
                     )}
                     
+                    {/* NEXT Button (Disabled on final step) */}
                     {step < totalSteps && (
                         <TouchableOpacity style={[styles.nextButton, step === 1 && { width: '100%' }]} onPress={() => setStep(step + 1)} disabled={loading}>
                             <Text style={styles.nextButtonText}>Next ({step}/{totalSteps})</Text>
                         </TouchableOpacity>
                     )}
                     
+                    {/* START DARING Button (Only shows on final step) */}
                     {step === totalSteps && (
                         <TouchableOpacity style={[styles.startButton, { width: '80%' }]} onPress={finishOnboarding} disabled={loading}>
                             <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Start Daring!'}</Text>
@@ -93,6 +101,7 @@ const OnboardingScreen = () => {
     );
 };
 
+// STYLESHEET: Uses Flexbox properties for centering and layout (Lecture 3)
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f0f4f7' },
     scrollContainer: { flexGrow: 1, padding: 30, justifyContent: 'center', alignItems: 'center' },
@@ -104,7 +113,7 @@ const styles = StyleSheet.create({
     tipText: { fontSize: 14, color: '#FF6347', marginTop: 10, fontStyle: 'italic' },
     buttonRow: { flexDirection: 'row', justifyContent: 'center', width: '100%', marginTop: 20 }, 
     
-    //Button Styles
+    // Button Styles
     nextButton: { flex: 1, backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' },
     nextButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     backButton: { backgroundColor: '#ccc', padding: 15, borderRadius: 8, alignItems: 'center', marginRight: 15 },
