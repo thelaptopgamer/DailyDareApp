@@ -10,11 +10,13 @@ import { completeDailyDare, rerollDailyDare, useSkipToGainReroll } from '../dail
 const DareHubScreen = () => {
     const [dailyDares, setDailyDares] = useState([]); 
     const [score, setScore] = useState(0); 
-    const [rerollCount, setRerollCount] = useState(0); 
+    const [rerollTokens, setRerollTokens] = useState(0); 
     const [loading, setLoading] = useState(true);
     
+    // Listen for the user's data and trigger seeding
     useEffect(() => {
         const user = auth.currentUser;
+        
         if (!user) {
             setLoading(false);
             return;
@@ -28,11 +30,11 @@ const DareHubScreen = () => {
                 
                 setDailyDares(userData.dailyDares || []); 
                 setScore(userData.score || 0); 
-                setRerollCount(userData.rerollCount || 0); 
+                setRerollTokens(userData.rerollTokens || 0); 
             } else {
                 setDailyDares([]);
                 setScore(0);
-                setRerollCount(0);
+                setRerollTokens(0);
             }
             setLoading(false);
         }, (error) => {
@@ -42,8 +44,9 @@ const DareHubScreen = () => {
         });
 
         return () => unsubscribe();
-    }, []); 
+    }, []);
 
+    // Completion handler
     const handleComplete = (dareId, points) => async () => {
          Alert.alert(
             "Confirm Completion", 
@@ -69,21 +72,33 @@ const DareHubScreen = () => {
         );
     };
 
-    // Reroll handler is updated to pass the specific dare's ID
+    // Reroll handler: Handles free token use OR point purchase
     const handleReroll = (dareId) => async () => {
+        const REROLL_COST = 50; 
         
-        if (rerollCount <= 0) {
-            Alert.alert("Reroll Failed", "You have no rerolls left today.");
+        let message = '';
+        let buttonText = 'Reroll';
+        let isFree = rerollTokens > 0;
+        
+        if (isFree) {
+            message = `Are you sure you want to use 1 free reroll token? You have ${rerollTokens} left.`;
+            buttonText = `Use Free Token`;
+        } else if (score >= REROLL_COST) {
+            message = `You have 0 free tokens. Do you want to purchase a reroll for ${REROLL_COST} points?`;
+            buttonText = `Pay ${REROLL_COST} Points`;
+        } else {
+            // Backup fail alert
+            Alert.alert("Reroll Failed", `You need ${REROLL_COST} points or a free token to reroll.`);
             return;
         }
 
         Alert.alert(
             "Confirm Reroll", 
-            `Are you sure you want to use 1 reroll? You have ${rerollCount} left.`,
+            message,
             [
                 { text: "Cancel", style: "cancel" },
                 { 
-                    text: "Reroll", 
+                    text: buttonText, 
                     onPress: async () => {
                         const result = await rerollDailyDare(dareId);
                         
@@ -113,7 +128,7 @@ const DareHubScreen = () => {
                     onPress: async () => {
                         const result = await useSkipToGainReroll();
                         if (result.success) {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); 
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             Alert.alert("Success!", result.message);
                         } else {
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -142,6 +157,7 @@ const DareHubScreen = () => {
         );
     }
 
+    // --- RENDER FUNCTION ---
     return (
         <SafeAreaView style={styles.safeArea}> 
             <ScrollView style={styles.scrollViewContainer}>
@@ -156,7 +172,7 @@ const DareHubScreen = () => {
                 {/* RENDER DARE CARDS FROM ARRAY */}
                 {dailyDares.map((dare, index) => (
                     <View 
-                        key={dare.dareId}
+                        key={index} // Changed key to index for stability since dareId might be repeated on reroll until data is unique
                         style={[styles.dareCard, dare.completed && styles.dareCompleted]}
                     >
                         <Text style={styles.dareTitle}>Dare #{index + 1}: {dare.title}</Text>
@@ -182,24 +198,18 @@ const DareHubScreen = () => {
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity 
-                                    style={[styles.rerollButton, rerollCount === 0 && styles.rerollDisabled]} 
+                                    style={[styles.rerollButton, rerollTokens === 0 && score < 50 && styles.rerollDisabled]} 
                                     onPress={handleReroll(dare.dareId)} 
-                                    disabled={rerollCount === 0}
+                                    disabled={rerollTokens === 0 && score < 50}
                                 >
-                                    <Text style={styles.rerollText}>Reroll ({rerollCount})</Text>
+                                    <Text style={styles.rerollText}>Reroll ({rerollTokens})</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
                 ))}
                 
-                {/* Skip/Reroll Info */}
-                <View style={styles.localInfo}>
-                    <Text style={styles.localInfoText}>You currently have {rerollCount} rerolls available.</Text>
-                    <TouchableOpacity onPress={handleSkip}>
-                        <Text style={styles.skipButton}>Use a Skip (+1 Reroll)</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* Removed: The unnecessary localInfo view */}
 
             </ScrollView>
         </SafeAreaView> 

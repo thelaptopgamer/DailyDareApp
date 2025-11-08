@@ -1,0 +1,120 @@
+// src/screens/OnboardingScreen.js
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { db, auth } from '../firebaseConfig';
+import { doc, updateDoc } from 'firebase/firestore';
+
+const OnboardingScreen = () => {
+    const [step, setStep] = useState(1); 
+    const [loading, setLoading] = useState(false);
+    const totalSteps = 3; 
+
+    // Function to mark onboarding as complete in Firestore
+    const finishOnboarding = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        setLoading(true);
+        const userDocRef = doc(db, 'Users', user.uid);
+        
+        try {
+            await updateDoc(userDocRef, {
+                onboardingComplete: true,
+            });
+            console.log("Onboarding marked complete for user.");
+        } catch (error) {
+            console.error("Error marking onboarding complete:", error);
+            Alert.alert("Error", "Could not save your preferences.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --- Render Content Based on Step ---
+
+    const renderQuestionnaire = () => {
+        if (step === 1) {
+            return (
+                <View style={styles.card}>
+                    <Text style={styles.stepTitle}>Step 1: Your Focus (Personalization)</Text>
+                    <Text style={styles.stepText}>What area of growth interests you most? This is used to suggest personalized dares.</Text>
+                    
+                    <Text style={styles.tipText}>[Selection buttons (Social, Fitness, Creative) will go here. Click Next to proceed.]</Text>
+                </View>
+            );
+        } else if (step === 2) {
+            return (
+                <View style={styles.card}>
+                    <Text style={styles.stepTitle}>Step 2: App Overview & Rules</Text>
+                    <Text style={styles.stepText}>The Daily Dare App works by providing 3 balanced challenges (Easy/Medium/Hard) per day to disrupt monotony.</Text>
+                    <Text style={styles.stepDetail}>- Max daily score potential is **300 points** (50 + 100 + 150).</Text>
+                    <Text style={styles.stepDetail}>- You receive **2 free rerolls** daily. Extra rerolls cost 50 points.</Text>
+                </View>
+            );
+        } else if (step === totalSteps) {
+            return (
+                <View style={styles.card}>
+                    <Text style={styles.stepTitle}>Final Step: Ready to Start?</Text>
+                    <Text style={styles.stepText}>Your account is set up and your first three personalized dares are waiting!</Text>
+                </View>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <Text style={styles.header}>Welcome to Daily Dare App!</Text>
+                
+                {renderQuestionnaire()}
+
+                <View style={styles.buttonRow}>
+                    {step > 1 && (
+                        <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)} disabled={loading}>
+                            <Text style={styles.backButtonText}>Back</Text>
+                        </TouchableOpacity>
+                    )}
+                    
+                    {step < totalSteps && (
+                        <TouchableOpacity style={[styles.nextButton, step === 1 && { width: '100%' }]} onPress={() => setStep(step + 1)} disabled={loading}>
+                            <Text style={styles.nextButtonText}>Next ({step}/{totalSteps})</Text>
+                        </TouchableOpacity>
+                    )}
+                    
+                    {step === totalSteps && (
+                        // FIX: Changed style to be contained within the buttonRow flex space
+                        <TouchableOpacity style={[styles.startButton, { width: '80%' }]} onPress={finishOnboarding} disabled={loading}>
+                            <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Start Daring!'}</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: '#f0f4f7' },
+    scrollContainer: { flexGrow: 1, padding: 30, justifyContent: 'center', alignItems: 'center' },
+    header: { fontSize: 28, fontWeight: 'bold', marginBottom: 40, textAlign: 'center', color: '#007AFF' },
+    card: { backgroundColor: '#fff', padding: 25, borderRadius: 10, width: '100%', marginBottom: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+    stepTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#333' },
+    stepText: { fontSize: 16, marginBottom: 10, lineHeight: 24, color: '#555' },
+    stepDetail: { fontSize: 14, marginLeft: 15, color: '#777', marginBottom: 5 },
+    tipText: { fontSize: 14, color: '#FF6347', marginTop: 10, fontStyle: 'italic' },
+    // Changed buttonRow to center content for the final step button
+    buttonRow: { flexDirection: 'row', justifyContent: 'center', width: '100%', marginTop: 20 }, 
+    
+    // Button Styles
+    nextButton: { flex: 1, backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' },
+    nextButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    backButton: { backgroundColor: '#ccc', padding: 15, borderRadius: 8, alignItems: 'center', marginRight: 15 },
+    backButtonText: { color: '#333', fontWeight: 'bold', fontSize: 16 },
+    // START Button: Adjusted width inline in the component to match the previous buttons.
+    startButton: { backgroundColor: '#4CAF50', padding: 18, borderRadius: 8, alignItems: 'center' },
+    buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 }
+});
+
+export default OnboardingScreen;

@@ -1,149 +1,137 @@
 // src/screens/SignupScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { auth, db } from '../firebaseConfig.js';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
+import { auth, db } from '../firebaseConfig';
+import { useNavigation } from '@react-navigation/native';
+import { assignDailyDare } from '../dailyDareUtils'; // CRITICAL FIX: Assigns dares immediately
 
-export default function SignupScreen({ navigation }) {
-  // Implement State for User Input
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const SignupScreen = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigation = useNavigation();
 
-  // Define the sign-up function using Firebase
-  const handleSignUp = async () => {
-    if (password.length < 6) {
-        Alert.alert("Error", "Password must be at least 6 characters long.");
-        return;
-    }
-    if (password !== confirmPassword) {
-        Alert.alert("Error", "Passwords do not match!");
-        return;
-    }
+    const handleSignup = async () => {
+        if (!email || !password) {
+            Alert.alert("Error", "Please fill in all fields (Email and Password).");
+            return;
+        }
 
-    try {
-        // Create the user in Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
-        const user = userCredential.user;
-        
-        // Create initial user data in Firestore (Users Collection)
-        await setDoc(doc(db, "Users", user.uid), {
-            uid: user.uid,
-            email: user.email,
-            points: 0,
-            streak: 0,
-            hard_dares_completed: 0,
-            achievements: [],
-            // Add other initial gamification/profile fields here
-        });
+        setLoading(true);
+        try {
+            // 1. Create user in Firebase Authentication
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-        console.log("User account created and profile saved:", user.email);
-        // The App.js listener handles the navigation to the main tabs automatically.
-        
-    } catch (error) {
-        // Display any Firebase errors (e.g., email already in use, invalid email format)
-        Alert.alert("Signup Error", error.message);
-        console.error("Signup Error:", error.message);
-    }
-  };
+            // 2. Create the corresponding user document in Firestore (Users collection)
+            const userDocRef = doc(db, 'Users', user.uid);
+            await setDoc(userDocRef, {
+                email: user.email,
+                // Removed username field
+                score: 0,
+                rerollTokens: 2, // 2 Free Rerolls
+                daresCompletedCount: 0,
+                createdAt: new Date().toISOString(),
+                dailyDares: [], // Initialize daily dares array
+                onboardingComplete: false, // Default: Not complete
+            });
+            
+            // 3. CRITICAL FIX: Assign the Dares IMMEDIATELY after the document is created
+            await assignDailyDare(); 
+            
+            console.log("User signed up and dares assigned successfully.");
+            // Navigation will happen immediately after this function finishes.
 
-  return (
-    // Flexbox Styling
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Your Account</Text>
+        } catch (error) {
+            Alert.alert("Signup Failed", error.message);
+            console.error("Signup error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      {/* Email Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Create Your DareHub Account</Text>
 
-      {/* Password Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Password (min 6 chars)"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      
-      {/* Confirm Password Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
+            {/* EMAIL INPUT */}
+            <TextInput
+                style={styles.input}
+                placeholder="Email" 
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor="#A0A0A0"
+            />
 
-      {/* Main Sign Up Button */}
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+            {/* PASSWORD INPUT */}
+            <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#A0A0A0"
+            />
 
-      {/* Navigation back to Login Screen (Your decision applied) */}
-      <TouchableOpacity 
-        style={styles.navLink} 
-        onPress={() => navigation.navigate('Login')}
-      >
-        <Text style={styles.navLinkText}>Already have an account? Log In</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+            {/* SIGN UP BUTTON */}
+            <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
+                <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Sign Up'}</Text>
+            </TouchableOpacity>
+            
+            {/* GO TO LOGIN */}
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.loginText}>Already have an account? Login</Text>
+            </TouchableOpacity>
+        </ScrollView>
+    );
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    color: '#333',
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  button: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  navLink: {
-    marginTop: 10,
-  },
-  navLinkText: {
-    color: '#007AFF',
-    fontSize: 16,
-  }
+    container: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#f5f5f5',
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 30,
+        color: '#333',
+    },
+    input: {
+        width: '100%',
+        padding: 15,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        marginBottom: 15,
+        backgroundColor: '#fff',
+        fontSize: 16,
+    },
+    button: {
+        width: '100%',
+        backgroundColor: '#007AFF',
+        padding: 18,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    loginText: {
+        marginTop: 10,
+        color: '#007AFF',
+        fontSize: 16,
+    }
 });
+
+export default SignupScreen;
