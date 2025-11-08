@@ -9,14 +9,14 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import DareHubScreen from './screens/DareHubScreen'; 
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
-import OnboardingScreen from './screens/OnboardingScreen'; // <-- NEW IMPORT
+import OnboardingScreen from './screens/OnboardingScreen';
 
 const Tab = createBottomTabNavigator();
 
 const AppTabs = () => {
     const [onboardingStatus, setOnboardingStatus] = useState(null); 
     
-    // Check onboarding status in real-time
+    //Check onboarding status in real-time
     useEffect(() => {
         const user = auth.currentUser;
         if (!user) return;
@@ -25,7 +25,7 @@ const AppTabs = () => {
         
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                // If onboardingComplete is false or undefined (new user), the status is false
+                //If onboardingComplete is false or undefined (new user), the status is false
                 const status = docSnap.data().onboardingComplete === true;
                 setOnboardingStatus(status);
             }
@@ -36,7 +36,7 @@ const AppTabs = () => {
         return () => unsubscribe();
     }, []);
 
-    // Show loading spinner while checking status
+    //Show loading spinner while checking status
     if (onboardingStatus === null) {
         return (
             <View style={styles.loadingContainer}>
@@ -45,12 +45,12 @@ const AppTabs = () => {
         ); 
     }
 
-    // CRITICAL: If onboarding is NOT complete, show the Onboarding screen instead of the tabs
+    //If onboarding is NOT complete, show the Onboarding screen instead of the tabs
     if (onboardingStatus === false) {
         return <OnboardingScreen />;
     }
 
-    // If onboarding is complete (true), show the main tabs
+    //If onboarding is complete (true), show the main tabs
     return (
         <Tab.Navigator
             initialRouteName="DareHub"

@@ -1,5 +1,3 @@
-// src/firebaseConfig.js
-// Import the core Firebase App initialization
 import 'firebase/auth';
 
 import { initializeApp } from 'firebase/app';
@@ -22,16 +20,16 @@ const firebaseConfig = {
   measurementId: "G-ZW0QM3RNY7" 
 };
 
-// Initialize Firebase App
+//Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 }); 
 
-// Initialize other Firebase services
+//Initialize other Firebase services
 const db = getFirestore(app); 
 const storage = getStorage(app); 
 
-// Export all services
+//Export all services
 export { app, auth, db, storage };

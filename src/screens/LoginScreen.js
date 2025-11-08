@@ -1,9 +1,8 @@
-// src/screens/LoginScreen.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { assignDailyDare } from '../dailyDareUtils'; // <-- NEW IMPORT
+import { assignDailyDare } from '../dailyDareUtils';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -19,12 +18,9 @@ const LoginScreen = ({ navigation }) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             
-            // CRITICAL FIX: Assign the dares IMMEDIATELY after successful login
-            // This ensures the profile document exists and the user is authenticated.
             await assignDailyDare(); 
             
             console.log("User logged in successfully and dares assigned.");
-            // Navigation handled by the listener in App.js
 
         } catch (error) {
             Alert.alert("Login Error", error.message);

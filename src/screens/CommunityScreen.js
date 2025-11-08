@@ -1,4 +1,3 @@
-// src/screens/CommunityScreen.js
 import React, { useState, useEffect, useCallback } from 'react'; 
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +5,7 @@ import { db, auth } from '../firebaseConfig';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons'; 
 
-// Simple debouncing function to limit fetching/filtering while typing
+//Simple debouncing function to limit fetching/filtering while typing
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -35,7 +34,7 @@ const CommunityScreen = () => {
             const q = query(
                 collection(db, 'Users'),
                 orderBy('score', 'desc'),
-                limit(200) // Fetch a wide range of users for search
+                limit(200) //Fetch a wide range of users for search
             );
 
             const querySnapshot = await getDocs(q);
@@ -44,12 +43,12 @@ const CommunityScreen = () => {
             querySnapshot.forEach((doc) => {
                 const userData = doc.data();
                 
-                // Reverted Logic: Use email prefix as the display name
+                //Reverted Logic: Use email prefix as the display name
                 let displayName; 
                 const emailParts = userData.email ? userData.email.split('@') : [doc.id.substring(0, 8), ''];
                 displayName = emailParts[0]; 
                 
-                // Only include users with points (score > 0)
+                //Only include users with points (score > 0)
                 if (userData.score > 0) {
                     users.push({
                         id: doc.id,
@@ -59,7 +58,7 @@ const CommunityScreen = () => {
                 }
             });
 
-            // Set all users and calculate the initial leaderboard (top 50)
+            //Set all users and calculate the initial leaderboard (top 50)
             setAllUsers(users);
             setLeaderboard(users.slice(0, 50).map((user, index) => ({ ...user, rank: index + 1 })));
 
@@ -70,7 +69,7 @@ const CommunityScreen = () => {
         }
     }, []);
     
-    // Function to apply the search filter
+    //Function to apply the search filter
     const filterAndRankUsers = useCallback((query) => {
         if (!query) {
             return allUsers.slice(0, 50).map((user, index) => ({ ...user, rank: index + 1 }));
@@ -78,31 +77,31 @@ const CommunityScreen = () => {
 
         const lowerCaseQuery = query.toLowerCase();
         
-        // Filter users based on display name containing the search query
+        //Filter users based on display name containing the search query
         const filteredUsers = allUsers.filter(user => 
             user.displayName.toLowerCase().includes(lowerCaseQuery)
         );
 
-        // Re-rank the filtered users starting from 1
+        //Re-rank the filtered users starting from 1
         return filteredUsers.map((user, index) => ({
             ...user,
             rank: index + 1
         }));
     }, [allUsers]);
 
-    // Effect to run the search when the debounced search text changes
+    //Effect to run the search when the debounced search text changes
     useEffect(() => {
         const filteredList = filterAndRankUsers(debouncedSearchText);
         setLeaderboard(filteredList);
     }, [debouncedSearchText, filterAndRankUsers]);
 
 
-    // Initial data load effect
+    //Initial data load effect
     useEffect(() => {
         fetchLeaderboard();
     }, [fetchLeaderboard]);
     
-    // Component for a single leaderboard item
+    //Component for a single leaderboard item
     const renderLeaderItem = ({ item }) => {
         const isCurrentUser = auth.currentUser.uid === item.id;
         
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 20,
     },
-    // STYLES FOR SEARCH INPUT
+    //STYLES FOR SEARCH INPUT
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -203,7 +202,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-    // END SEARCH STYLES
+    //END SEARCH STYLES
     listHeader: {
         flexDirection: 'row',
         paddingVertical: 10,

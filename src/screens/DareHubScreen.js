@@ -1,4 +1,3 @@
-// src/screens/DareHubScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; 
@@ -13,7 +12,7 @@ const DareHubScreen = () => {
     const [rerollTokens, setRerollTokens] = useState(0); 
     const [loading, setLoading] = useState(true);
     
-    // Listen for the user's data and trigger seeding
+    //Listen for the user's data and trigger seeding
     useEffect(() => {
         const user = auth.currentUser;
         
@@ -72,7 +71,7 @@ const DareHubScreen = () => {
         );
     };
 
-    // Reroll handler: Handles free token use OR point purchase
+    //Reroll handler: Handles free token use OR point purchase
     const handleReroll = (dareId) => async () => {
         const REROLL_COST = 50; 
         
@@ -87,7 +86,7 @@ const DareHubScreen = () => {
             message = `You have 0 free tokens. Do you want to purchase a reroll for ${REROLL_COST} points?`;
             buttonText = `Pay ${REROLL_COST} Points`;
         } else {
-            // Backup fail alert
+            //Backup fail
             Alert.alert("Reroll Failed", `You need ${REROLL_COST} points or a free token to reroll.`);
             return;
         }
@@ -116,7 +115,7 @@ const DareHubScreen = () => {
         );
     };
 
-    // Skip/Reroll Exchange Handler
+    //Skip/Reroll Exchange Handler
     const handleSkip = async () => {
         Alert.alert(
             "Use Skip Token", 
@@ -157,7 +156,7 @@ const DareHubScreen = () => {
         );
     }
 
-    // --- RENDER FUNCTION ---
+    //RENDER FUNCTION
     return (
         <SafeAreaView style={styles.safeArea}> 
             <ScrollView style={styles.scrollViewContainer}>
@@ -172,7 +171,7 @@ const DareHubScreen = () => {
                 {/* RENDER DARE CARDS FROM ARRAY */}
                 {dailyDares.map((dare, index) => (
                     <View 
-                        key={index} // Changed key to index for stability since dareId might be repeated on reroll until data is unique
+                        key={index}
                         style={[styles.dareCard, dare.completed && styles.dareCompleted]}
                     >
                         <Text style={styles.dareTitle}>Dare #{index + 1}: {dare.title}</Text>
@@ -209,7 +208,6 @@ const DareHubScreen = () => {
                     </View>
                 ))}
                 
-                {/* Removed: The unnecessary localInfo view */}
 
             </ScrollView>
         </SafeAreaView> 

@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 import { auth, db } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { assignDailyDare } from '../dailyDareUtils'; // CRITICAL FIX: Assigns dares immediately
+import { assignDailyDare } from '../dailyDareUtils';
 
 const SignupScreen = () => {
     const [email, setEmail] = useState('');
@@ -21,28 +21,25 @@ const SignupScreen = () => {
 
         setLoading(true);
         try {
-            // 1. Create user in Firebase Authentication
+            //Create user in Firebase Authentication
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 2. Create the corresponding user document in Firestore (Users collection)
+            //Create the corresponding user document in Firestore
             const userDocRef = doc(db, 'Users', user.uid);
             await setDoc(userDocRef, {
                 email: user.email,
-                // Removed username field
                 score: 0,
-                rerollTokens: 2, // 2 Free Rerolls
+                rerollTokens: 2,
                 daresCompletedCount: 0,
                 createdAt: new Date().toISOString(),
-                dailyDares: [], // Initialize daily dares array
-                onboardingComplete: false, // Default: Not complete
+                dailyDares: [],
+                onboardingComplete: false,
             });
             
-            // 3. CRITICAL FIX: Assign the Dares IMMEDIATELY after the document is created
             await assignDailyDare(); 
             
-            console.log("User signed up and dares assigned successfully.");
-            // Navigation will happen immediately after this function finishes.
+            console.log("User signed up and dares assigned success.");
 
         } catch (error) {
             Alert.alert("Signup Failed", error.message);

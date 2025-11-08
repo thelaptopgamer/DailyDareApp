@@ -1,6 +1,3 @@
-// App.js
-
-// CRITICAL FIXES: Ensure Firebase modules are registered early
 import 'firebase/auth'; 
 import 'firebase/firestore'; 
 
@@ -10,7 +7,7 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import AuthStack from './src/AuthStack';
 import AppTabs from './src/AppTabs';
 import { auth } from './src/firebaseConfig';
-import { seedDares } from './src/firestoreUtils.js'; // Retain import for manual call
+import { seedDares } from './src/firestoreUtils.js';
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -23,14 +20,12 @@ export default function App() {
   }
 
   useEffect(() => {
-    // REMOVED: seedDares() call from here. It will now be called from DareHubScreen.js.
 
-    // Set up the Firebase Auth state listener
+    //Set up the Firebase Auth
     const subscriber = auth.onAuthStateChanged(onAuthStateChanged);
     
-    // Unsubscribe listener on unmount
     return subscriber; 
-  }, []); // Run only on mount/unmount
+  }, []);
 
   if (initializing) {
     return (

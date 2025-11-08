@@ -1,20 +1,18 @@
-// src/dailyDareUtils.js
 import { db, auth } from './firebaseConfig';
 import { collection, doc, getDocs, getDoc, updateDoc, setDoc, query, where } from 'firebase/firestore'; 
 
-// --- Configuration ---
 const DARES_PER_DAY = 3; 
 const FREE_REROLLS_PER_DAY = 2; 
 const DIFFICULTY_LEVELS = ['Easy', 'Medium', 'Hard']; 
 const REROLL_COST = 50;
 
-// Helper function to format today's date (YYYY-MM-DD)
+//Helper function to format today's date (YYYY-MM-DD)
 const getTodayDate = () => {
     const d = new Date();
     return d.toISOString().split('T')[0];
 };
 
-// Main function to assign daily dares and free tokens
+//Main function to assign daily dares and free tokens
 const assignDailyDare = async () => {
     const user = auth.currentUser;
     if (!user) return null;
@@ -26,7 +24,7 @@ const assignDailyDare = async () => {
         const userDoc = await getDoc(userDocRef);
         let userData = userDoc.data();
         
-        // --- Initialize user document if it doesn't exist (Fixes multi-account login) ---
+        //Initialize user document if it doesn't exist (Fixes multi-account login)
         if (!userDoc.exists()) {
             userData = {
                 score: 0,
@@ -40,7 +38,7 @@ const assignDailyDare = async () => {
             await setDoc(userDocRef, userData);
             console.log(`Created new user document for ${user.email}`);
         } else {
-             // Ensure fields are initialized if missing (handles old users)
+             //Ensure fields are initialized if missing (handles old users)
              let shouldUpdate = false;
              if (userData.rerollTokens === undefined) {
                  userData.rerollTokens = FREE_REROLLS_PER_DAY;
@@ -69,18 +67,18 @@ const assignDailyDare = async () => {
              }
         }
 
-        // 1. Check if dares are already assigned for today
+        //Check if dares are already assigned for today
         if (userData?.dailyDares?.length > 0 && userData.dailyDares[0].assignedDate === todayDate) {
             console.log("3 Daily Dares already assigned for today.");
             return userData.dailyDares;
         }
 
-        // 2. Assign Free Daily Tokens (Resets daily)
+        //Assign Free Daily Tokens (Resets daily)
         await updateDoc(userDocRef, {
             rerollTokens: FREE_REROLLS_PER_DAY, 
         });
         
-        // --- 3. Fetch and Assign 1 Easy, 1 Medium, 1 Hard Dare ---
+        //Fetch and Assign 1 Easy, 1 Medium, 1 Hard Dare
         const newDailyDares = [];
         const assignedDareIds = new Set();
         
@@ -114,7 +112,7 @@ const assignDailyDare = async () => {
             }
         }
         
-        // 4. Update the user's document in Firestore with the new array
+        //Update the user's document in Firestore with the new array
         await updateDoc(userDocRef, {
             dailyDares: newDailyDares, 
             lastDareAssignment: todayDate,
@@ -129,7 +127,7 @@ const assignDailyDare = async () => {
     }
 };
 
-// Marks a specific dare as completed and updates points
+//Marks a specific dare as completed and updates points
 const completeDailyDare = async (dareId, points) => {
     const user = auth.currentUser;
     if (!user || !dareId) return false;
@@ -168,7 +166,7 @@ const completeDailyDare = async (dareId, points) => {
     }
 };
 
-// Reroll function updated for cost display and fixed difficulty
+//Reroll function updated for cost display and fixed difficulty
 const rerollDailyDare = async (currentDareId) => {
     const user = auth.currentUser;
     if (!user) return { success: false, message: "User not logged in." };
@@ -183,7 +181,7 @@ const rerollDailyDare = async (currentDareId) => {
         let currentScore = userData?.score || 0;
         let dares = userData?.dailyDares || [];
 
-        // 1. Check token/point cost
+        //Check token/point cost
         if (availableTokens > 0) {
             availableTokens -= 1; 
         } else if (currentScore >= REROLL_COST) {
@@ -199,7 +197,7 @@ const rerollDailyDare = async (currentDareId) => {
 
         const originalDareDifficulty = dares[dareIndex].difficulty;
         
-        // 2. Fetch all dares and find replacement of the same difficulty
+        //Fetch all dares and find replacement of the same difficulty
         const daresRef = collection(db, "Dares");
         const dareSnapshot = await getDocs(daresRef);
         
@@ -219,7 +217,7 @@ const rerollDailyDare = async (currentDareId) => {
         
         const todayDate = getTodayDate();
 
-        // 3. Create new dare object and replace the old one
+        //Create new dare object and replace the old one
         const newDareObject = {
             dareId: newDare.id,
             assignedDate: todayDate,
@@ -251,7 +249,7 @@ const rerollDailyDare = async (currentDareId) => {
     }
 };
 
-// Skip functionality: Use a Skip to gain one Reroll Token (no cost needed yet)
+// kip functionality: Use a Skip to gain one Reroll Token (no cost needed yet)
 const useSkipToGainReroll = async () => {
     const user = auth.currentUser;
     if (!user) return { success: false, message: "User not logged in." };

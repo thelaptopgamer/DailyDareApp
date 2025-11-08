@@ -12,7 +12,7 @@ const ProfileScreen = () => {
 
     const userEmail = auth.currentUser?.email;
 
-    // Fetch user data (score) in real-time
+    //Get user data
     useEffect(() => {
         const user = auth.currentUser;
         if (!user) {
@@ -22,10 +22,9 @@ const ProfileScreen = () => {
 
         const userDocRef = doc(db, 'Users', user.uid);
 
-        // Sets up a real-time listener for the user's document
+        //Sets up a real-time listener for the user's document
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                // Set the entire user data object (will include 'score')
                 setUserData(docSnap.data());
             } else {
                 setUserData(null);
@@ -37,15 +36,13 @@ const ProfileScreen = () => {
             Alert.alert("Error", "Could not fetch profile data.");
         });
 
-        // Clean up the listener
         return () => unsubscribe();
     }, []);
 
-    // Handle logout functionality
+    //Logout
     const handleLogout = async () => {
         try {
             await signOut(auth);
-            // Firebase Auth state change handles navigation automatically (in App.js)
         } catch (error) {
             console.error("Logout Error:", error);
             Alert.alert("Logout Failed", "There was an issue logging you out.");
@@ -106,7 +103,7 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 30,
     },
-    // Info Card
+    //Info Card
     infoCard: {
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -130,7 +127,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    // Score Card
+    //Score Card
     scoreCard: {
         backgroundColor: '#E6F0FF',
         borderRadius: 12,
@@ -157,10 +154,10 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#333',
     },
-    // Logout Button
+    //Logout Button
     logoutButton: {
-        marginTop: 'auto', // Push to the bottom of the container
-        backgroundColor: '#FF6347', // Red for logout
+        marginTop: 'auto',
+        backgroundColor: '#FF6347',
         padding: 15,
         borderRadius: 8,
         alignItems: 'center',

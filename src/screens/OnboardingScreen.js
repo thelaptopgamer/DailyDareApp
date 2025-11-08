@@ -1,4 +1,3 @@
-// src/screens/OnboardingScreen.js
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +9,7 @@ const OnboardingScreen = () => {
     const [loading, setLoading] = useState(false);
     const totalSteps = 3; 
 
-    // Function to mark onboarding as complete in Firestore
+    //Function to mark onboarding as complete in Firestore
     const finishOnboarding = async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -31,7 +30,7 @@ const OnboardingScreen = () => {
         }
     };
 
-    // --- Render Content Based on Step ---
+    // Content for each step
 
     const renderQuestionnaire = () => {
         if (step === 1) {
@@ -84,7 +83,6 @@ const OnboardingScreen = () => {
                     )}
                     
                     {step === totalSteps && (
-                        // FIX: Changed style to be contained within the buttonRow flex space
                         <TouchableOpacity style={[styles.startButton, { width: '80%' }]} onPress={finishOnboarding} disabled={loading}>
                             <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Start Daring!'}</Text>
                         </TouchableOpacity>
@@ -104,15 +102,13 @@ const styles = StyleSheet.create({
     stepText: { fontSize: 16, marginBottom: 10, lineHeight: 24, color: '#555' },
     stepDetail: { fontSize: 14, marginLeft: 15, color: '#777', marginBottom: 5 },
     tipText: { fontSize: 14, color: '#FF6347', marginTop: 10, fontStyle: 'italic' },
-    // Changed buttonRow to center content for the final step button
     buttonRow: { flexDirection: 'row', justifyContent: 'center', width: '100%', marginTop: 20 }, 
     
-    // Button Styles
+    //Button Styles
     nextButton: { flex: 1, backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' },
     nextButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     backButton: { backgroundColor: '#ccc', padding: 15, borderRadius: 8, alignItems: 'center', marginRight: 15 },
     backButtonText: { color: '#333', fontWeight: 'bold', fontSize: 16 },
-    // START Button: Adjusted width inline in the component to match the previous buttons.
     startButton: { backgroundColor: '#4CAF50', padding: 18, borderRadius: 8, alignItems: 'center' },
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 }
 });

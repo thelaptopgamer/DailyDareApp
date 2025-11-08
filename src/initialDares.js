@@ -1,6 +1,5 @@
-// src/initialDares.js
 const initialDares = [
-    // --- EASY DARES (50 Points, 10 Total) ---
+    //EASY DARES (50 Points)
     { title: "Compliment a Stranger", description: "Give a genuine, specific compliment.", points: 50, difficulty: "Easy", proof_required: false, tags: ["Social"] },
     { title: "Eat a Veggie", description: "Eat a vegetable you haven't had in the last week.", points: 50, difficulty: "Easy", proof_required: false, tags: ["Health"] },
     { title: "5-Minute Plank Challenge", description: "Hold a plank for a total of 5 minutes (can be broken up).", points: 50, difficulty: "Easy", proof_required: true, tags: ["Fitness"] },
@@ -12,7 +11,7 @@ const initialDares = [
     { title: "Send a Positive Text", description: "Send a text message to a friend saying why you appreciate them.", points: 50, difficulty: "Easy", proof_required: false, tags: ["Social"] },
     { title: "Plan Your Day", description: "Spend 5 minutes writing down the top 3 tasks for tomorrow.", points: 50, difficulty: "Easy", proof_required: false, tags: ["Productivity"] },
 
-    // --- MEDIUM DARES (100 Points, 10 Total) ---
+    //MEDIUM DARES (100 Points)
     { title: "Learn a Fun Fact", description: "Research a topic for 10 min and teach someone a fact.", points: 100, difficulty: "Medium", proof_required: false, tags: ["Knowledge"] },
     { title: "Zero Waste Coffee Run", description: "Buy a coffee using only your own reusable mug.", points: 100, difficulty: "Medium", proof_required: true, tags: ["Environment"] },
     { title: "Call an Old Friend", description: "Call a friend or family member you haven't spoken to in over a month.", points: 100, difficulty: false, tags: ["Social"] },
@@ -24,7 +23,7 @@ const initialDares = [
     { title: "Practice a New Language", description: "Use Duolingo or similar app for 15 consecutive minutes.", points: 100, difficulty: "Medium", proof_required: false, tags: ["Knowledge"] },
     { title: "Unsubscribe from 10 Emails", description: "Clean out your inbox by unsubscribing from 10 unwanted lists.", points: 100, difficulty: "Medium", proof_required: false, tags: ["Habit"] },
 
-    // --- HARD DARES (150 Points, 10 Total) ---
+    //HARD DARES (150 Points)
     { title: "Cold Shower Shock", description: "Take a full 3-minute cold shower. No turning it warm!", points: 150, difficulty: "Hard", proof_required: true, tags: ["Discomfort"] },
     { title: "Public Speaking Practice", description: "Record yourself giving a 2-minute speech on a topic you care about.", points: 150, difficulty: "Hard", proof_required: true, tags: ["Social"] },
     { title: "No Phone After 8 PM", description: "Put your phone in another room after 8 PM until tomorrow morning.", points: 150, difficulty: "Hard", proof_required: true, tags: ["Discipline"] },
