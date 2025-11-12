@@ -12,6 +12,7 @@ import DareHubStack from './DareHubStack'; //Nested stack for the DareHub flow
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
 import OnboardingScreen from './screens/OnboardingScreen';
+import CameraScreen from './cameraTab';
 
 const Tab = createBottomTabNavigator();
 
@@ -62,7 +63,9 @@ const AppTabs = () => {
                         iconName = focused ? 'people' : 'people-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person-circle' : 'person-circle-outline';
-                    }
+                    } else if (route.name === 'Capture') { 
+                        iconName = focused ? 'camera' : 'camera-outline';
+                    } 
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#007AFF', 
@@ -70,6 +73,11 @@ const AppTabs = () => {
             })}
         >
             <Tab.Screen name="DareHub" component={DareHubStack} />
+            <Tab.Screen 
+                name="Capture" 
+                component={CameraScreen} 
+                options={{ title: 'Capture' }} 
+            />
             <Tab.Screen name="Community" component={CommunityScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>

@@ -1,4 +1,4 @@
-//DareHubScreen.js
+//src/screens/DareHubScreen.js
 //Purpose: Displays the daily dares, score, and initiates the Proof Submission navigation path.
 
 import React, { useState, useEffect } from 'react';
