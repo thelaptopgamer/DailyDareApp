@@ -10,7 +10,6 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import AuthStack from './src/AuthStack.js'; 
 import AppTabs from './src/AppTabs.js'; 
 import { auth } from './src/firebaseConfig.js';
-import CameraScreen from './src/cameraTab.js';
 import { seedDares } from './src/firestoreUtils.js';
 
 export default function App() {
@@ -31,6 +30,7 @@ export default function App() {
     
     return subscriber;
   }, []);
+
 
   //Show loading screen during initial check
   if (initializing) {

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { completeDailyDare } from '../dailyDareUtils'; // To finalize scoring
 
+
 const DareDetailScreen = ({ navigation, route }) => {
     //Retrieves the dare object passed from the Dashboard
     const { dare } = route.params;
@@ -30,9 +31,13 @@ const DareDetailScreen = ({ navigation, route }) => {
     };
 
     //Placeholder function for the camera button click (Native Feature)
+    // const handleCameraClick = () => {
+    //     Alert.alert("Camera logic will be implemented here for final project.");
+    // };
     const handleCameraClick = () => {
-        Alert.alert("Camera logic will be implemented here for final project.");
+        navigation.navigate('CameraScreen', { dare });
     };
+
 
     return (
         <SafeAreaView style={styles.safeArea}>

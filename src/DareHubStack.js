@@ -7,6 +7,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DareHubScreen from './screens/DareHubScreen';
 import DareDetailScreen from './screens/DareDetailScreen'; 
 import ProofSubmissionScreen from './screens/ProofSubmissionScreen'; 
+import CameraScreen from './screens/CameraScreen';
+
+
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +36,13 @@ const DareHubStack = () => {
                 component={ProofSubmissionScreen} 
                 options={{ title: 'Submit Proof' }}
             />
+            {/* Camera */}
+            <Stack.Screen 
+                name="CameraScreen" 
+                component={CameraScreen} 
+                options={{ title: 'Camera' }}
+            />
+
         </Stack.Navigator>
     );
 };

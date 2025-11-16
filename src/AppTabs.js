@@ -12,7 +12,9 @@ import DareHubStack from './DareHubStack'; //Nested stack for the DareHub flow
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
 import OnboardingScreen from './screens/OnboardingScreen';
-import CameraScreen from './cameraTab';
+import CameraScreen from './screens/CameraScreen';
+
+
 
 const Tab = createBottomTabNavigator();
 

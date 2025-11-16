@@ -8,6 +8,7 @@ import { db, auth } from '../firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 import * as Haptics from 'expo-haptics';
 
+
 //Import logic functions
 import {rerollDailyDare,useSkipToGainReroll,} from '../dailyDareUtils';
 
