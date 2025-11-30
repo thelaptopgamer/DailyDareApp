@@ -12,6 +12,7 @@ import DareHubStack from './DareHubStack'; //Nested stack for the DareHub flow
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
 import OnboardingScreen from './screens/OnboardingScreen';
+import SocialFeedScreen from './screens/SocialFeedScreen';
 import CameraScreen from './screens/CameraScreen';
 
 
@@ -76,12 +77,17 @@ const AppTabs = () => {
             })}
         >
             <Tab.Screen name="DareHub" component={DareHubStack} />
-            {/* <Tab.Screen 
-                name="Capture" 
-                component={CameraScreen} 
-                options={{ title: 'Capture' }} 
-            /> */}
             <Tab.Screen name="Community" component={CommunityScreen} />
+            <Tab.Screen 
+                name="Feed" 
+                component={SocialFeedScreen} 
+                options={{ 
+                    tabBarLabel: 'Feed',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="images-outline" size={size} color={color} />
+                    )
+                }}
+            />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
