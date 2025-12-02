@@ -1,11 +1,12 @@
 //src/screens/ProfileScreen.js
-//Purpose: High-Fidelity Profile Screen. "Friends" replaced with "Dares Completed".
+//Purpose: Displays the user's profile, total score, progress statistics, and logout option.
+//Data is fetched and updated in real-time via Firestore listeners.
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore'; //Used for real-time data fetching
 import { signOut } from 'firebase/auth'; 
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,15 +14,21 @@ const ProfileScreen = () => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const userEmail = auth.currentUser?.email;
+    //Derive display name from email (e.g., 'coope' from 'coope@sfu.ca')
     const displayName = userEmail ? userEmail.split('@')[0] : 'Guest';
 
+    //Real-time Firestore Listener
     useEffect(() => {
         const user = auth.currentUser;
         if (!user) { setLoading(false); return; }
+        
+        //Subscribe to the user's document for live score/token updates
         const unsubscribe = onSnapshot(doc(db, 'Users', user.uid), (docSnap) => {
             if (docSnap.exists()) setUserData(docSnap.data());
             setLoading(false);
         });
+        
+        //Cleanup function runs when the component unmounts
         return () => unsubscribe();
     }, []); 
 
@@ -31,16 +38,17 @@ const ProfileScreen = () => {
 
     if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
+    //Data points derived from user document
     const userScore = userData?.score || 0;
     const rerollCount = userData?.rerollTokens || 0;
     const interests = userData?.interests || [];
     
-    // CHANGED: Use daresCompletedCount instead of friends
+    //Tracks total dares completed (including Overtime dares)
     const completedCount = userData?.daresCompletedCount || 0;
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* HEADER CARD */}
+            {/* User Header Card */}
             <View style={styles.headerCard}>
                 <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
@@ -48,6 +56,7 @@ const ProfileScreen = () => {
                 <Text style={styles.nameText}>{displayName}</Text>
                 <Text style={styles.emailText}>{userEmail}</Text>
                 
+                {/* Display user interests/tags */}
                 <View style={styles.tagsRow}>
                     {interests.slice(0, 3).map((tag, i) => (
                         <View key={i} style={styles.tagBadge}><Text style={styles.tagText}>{tag}</Text></View>
@@ -55,7 +64,7 @@ const ProfileScreen = () => {
                 </View>
             </View>
 
-            {/* STATS GRID */}
+            {/* Stats Grid: Points, Completed Dares, Rerolls */}
             <View style={styles.statsContainer}>
                 {/* Total Points */}
                 <View style={styles.statBox}>
@@ -66,7 +75,7 @@ const ProfileScreen = () => {
                     <Text style={styles.statLabel}>Total Points</Text>
                 </View>
                 
-                {/* CHANGED: Dares Completed */}
+                {/* Dares Completed */}
                 <View style={styles.statBox}>
                      <View style={[styles.iconBox, {backgroundColor:'#E8F5E9'}]}>
                         <Ionicons name="checkmark-done-circle" size={24} color="#4CAF50" />
@@ -85,7 +94,7 @@ const ProfileScreen = () => {
                 </View>
             </View>
 
-            {/* MENU OPTIONS */}
+            {/* Menu Options */}
             <View style={styles.menuContainer}>
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={20} color="#FF3B30" />

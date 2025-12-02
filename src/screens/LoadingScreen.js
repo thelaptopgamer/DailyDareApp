@@ -1,5 +1,5 @@
-// src/screens/LoadingScreen.js
-// Purpose: Polished Loading Screen. Rebranded to IGNITE.
+//src/screens/LoadingScreen.js
+//Displays the initial branding and loading state while the app initializes authentication.
 
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
@@ -10,16 +10,16 @@ const LoadingScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                {/* Logo / Icon */}
+                {/* Brand Icon */}
                 <View style={styles.iconContainer}>
                     <Ionicons name="flash" size={80} color="#fff" />
                 </View>
 
-                {/* App Title - CHANGED */}
+                {/* App Name and Tagline */}
                 <Text style={styles.title}>IGNITE</Text>
                 <Text style={styles.subtitle}>Challenge Your Limits</Text>
 
-                {/* Loading Spinner */}
+                {/* Loading Indicator */}
                 <ActivityIndicator size="large" color="#fff" style={styles.spinner} />
                 
                 <Text style={styles.loadingText}>Igniting...</Text>
@@ -31,7 +31,7 @@ const LoadingScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#007AFF', // Brand Blue Background
+        backgroundColor: '#007AFF', //Primary brand color
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     },
     iconContainer: {
         marginBottom: 20,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.2)', //Semi-transparent white backing
         borderRadius: 50,
         padding: 20,
     },
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
         fontSize: 42,
         fontWeight: 'bold',
         color: '#fff',
-        letterSpacing: 2, // Added spacing for that "Premium" feel
+        letterSpacing: 2, 
     },
     subtitle: {
         fontSize: 16,

@@ -1,5 +1,6 @@
-// src/screens/CommunityScreen.js
-// Purpose: Social Feed. Clean Preview (No Map) + Detailed Modal (With Map).
+//src/screens/CommunityScreen.js
+//Purpose: The primary social feed where users can view proofs, like posts, and award points.
+//Implements complex data handling including atomic transactions for the award economy.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -14,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
+//Configuration for the award system economy
 const AWARDS = [
     { id: 'clap', icon: '👏', name: 'Applause', cost: 10 },
     { id: 'fire', icon: '🔥', name: 'Hype', cost: 25 },
@@ -36,9 +38,10 @@ const CommunityScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // FETCH DATA
+  //Fetch initial data for both the Feed and Leaderboard
   const loadData = useCallback(async () => {
     try {
+        //Fetch Top 50 Users for Leaderboard
         const qLeader = query(collection(db, 'Users'), orderBy('score', 'desc'), limit(50));
         const snapLeader = await getDocs(qLeader);
         const users = [];
@@ -46,20 +49,24 @@ const CommunityScreen = () => {
             const d = doc.data();
             if (d.score > 0) users.push({ id: doc.id, displayName: d.email ? d.email.split('@')[0] : 'User', score: d.score });
         });
+        
+        //Calculate ranks locally
         const ranked = users.map((u, i) => ({ ...u, rank: i + 1 }));
         setLeaderboard(ranked);
         setFilteredLeaderboard(ranked);
 
+        //Fetch Top 50 Recent Posts for Feed
         const qFeed = query(collection(db, 'CommunityPosts'), orderBy('timestamp', 'desc'), limit(50));
         const snapFeed = await getDocs(qFeed);
         const posts = [];
         snapFeed.forEach((doc) => {
             const d = doc.data();
+            //Convert Firestore Timestamp to JS Date object for rendering
             posts.push({ id: doc.id, ...d, createdAt: d.timestamp ? d.timestamp.toDate() : new Date() });
         });
         setFeed(posts);
 
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Data load error:", e); }
   }, []);
 
   useEffect(() => {
@@ -72,6 +79,7 @@ const CommunityScreen = () => {
     setRefreshing(false);
   };
 
+  //Local filtering for the leaderboard search bar
   const handleSearch = (text) => {
     setSearchQuery(text);
     if (!text) setFilteredLeaderboard(leaderboard);
@@ -88,6 +96,7 @@ const CommunityScreen = () => {
       ]);
   };
 
+  //Handles simple Likes. Uses arrayUnion to ensure unique likes per user.
   const handleLike = async (post) => {
      const user = auth.currentUser;
      if(!user) return;
@@ -106,11 +115,13 @@ const CommunityScreen = () => {
      } catch(e) { console.error("Like error", e); }
   };
 
+  //Award Modal Triggers
   const openAwardMenu = (post) => {
       setPostToAward(post);
       setAwardModalVisible(true);
   };
 
+  //Core Economy Logic: Processes the transaction for buying awards
   const giveAward = async (award) => {
     const user = auth.currentUser;
     if (!user || !postToAward) return;
@@ -124,20 +135,24 @@ const CommunityScreen = () => {
     setAwardModalVisible(false); 
 
     try {
+        //Use a Transaction to ensure atomic updates (prevent spending points if update fails)
         await runTransaction(db, async (transaction) => {
             const userRef = doc(db, "Users", user.uid);
             const postRef = doc(db, "CommunityPosts", postToAward.id);
 
+            //Read current state first
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) throw "User does not exist!";
             const currentScore = userDoc.data().score || 0;
 
+            //Verify funds
             if (currentScore < award.cost) {
                 throw "Not enough points!";
             }
 
+            //Execute both writes simultaneously
             transaction.update(userRef, { score: increment(-award.cost) });
-            const fieldName = `awards.${award.id}`;
+            const fieldName = `awards.${award.id}`; //Dynamic field update for specific award type
             transaction.update(postRef, { [fieldName]: increment(1) });
         });
 
@@ -148,7 +163,7 @@ const CommunityScreen = () => {
         if (error === "Not enough points!") {
             Alert.alert("Insufficient Funds", `You need ${award.cost} points for this award.`);
         } else {
-            console.error("Award Error:", error);
+            console.error("Award Transaction Error:", error);
             Alert.alert("Error", "Could not send award.");
         }
     }
@@ -160,15 +175,18 @@ const CommunityScreen = () => {
       return '#FF9500'; 
   };
 
-  // --- RENDER FUNCTIONS ---
+  //RENDER FUNCTIONS
 
   const renderLeaderItem = ({ item }) => {
     const isMe = auth.currentUser?.uid === item.id;
+    
+    //Style top 3 ranks distinctly
     let rankColor = '#fff';
     let borderColor = 'transparent';
     if (item.rank === 1) { rankColor = '#FFFDE7'; borderColor = '#FFD700'; }
     else if (item.rank === 2) { rankColor = '#FAFAFA'; borderColor = '#C0C0C0'; }
     else if (item.rank === 3) { rankColor = '#FFF3E0'; borderColor = '#CD7F32'; }
+    
     if (isMe) borderColor = '#007AFF';
 
     return (
@@ -219,9 +237,14 @@ const CommunityScreen = () => {
             
             <Image source={{ uri: item.imageURL }} style={styles.postImage} resizeMode="cover" />
             
-            {/* REMOVED MINI MAP FROM HERE */}
+            {/* Dare Description */}
+            {item.dareDescription && (
+                <View style={styles.descriptionBox}>
+                    <Text style={styles.descriptionText}>{item.dareDescription}</Text>
+                </View>
+            )}
 
-            {/* Social Bar */}
+            {/* Footer: Social Actions */}
             <View style={styles.socialBar}>
                 <TouchableOpacity style={styles.socialBtn} onPress={() => handleLike(item)}>
                     <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? "#FF3B30" : "#333"} />
@@ -276,7 +299,7 @@ const CommunityScreen = () => {
             </TouchableOpacity>
         </Modal>
 
-        {/* --- DETAIL MODAL (MAP IS HERE) --- */}
+        {/* POST DETAIL MODAL */}
         <Modal visible={!!selectedPost} animationType="slide" presentationStyle="formSheet">
             {selectedPost && (
                 <View style={styles.detailContainer}>
@@ -323,6 +346,7 @@ const CommunityScreen = () => {
                                         </View>
                                     )}
                                 </View>
+                                <Text style={styles.detailDescription}>{selectedPost.dareDescription}</Text>
                             </View>
 
                             {/* LOCATION CARD (Only in Detail View) */}
@@ -393,93 +417,94 @@ const CommunityScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F2F4F7' },
-  headerContainer: { padding: 15, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  
-  // AWARD STYLES
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  awardMenu: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 25, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, elevation: 10 },
-  awardMenuTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  awardMenuSub: { fontSize: 14, color: '#666', marginBottom: 20 },
-  awardRow: { flexDirection: 'row', marginBottom: 10, paddingVertical: 10, paddingHorizontal: 5 }, 
-  awardOption: { alignItems: 'center', padding: 10, borderRadius: 10, backgroundColor: '#f9f9f9', marginHorizontal: 5, width: 80, borderWidth: 1, borderColor: '#eee' },
-  bigIcon: { fontSize: 32, marginBottom: 5 },
-  awardName: { fontWeight: 'bold', color: '#333', fontSize: 12 },
-  awardCost: { color: '#007AFF', fontSize: 10, fontWeight: 'bold' },
-  cancelBtn: { padding: 10, width: '100%', alignItems: 'center', marginTop: 10 },
-  cancelText: { color: '#FF3B30', fontSize: 16 },
+  safeArea: { flex: 1, backgroundColor: '#F2F4F7' },
+  headerContainer: { padding: 15, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+  
+  //AWARD STYLES
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  awardMenu: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 25, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, elevation: 10 },
+  awardMenuTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  awardMenuSub: { fontSize: 14, color: '#666', marginBottom: 20 },
+  awardRow: { flexDirection: 'row', marginBottom: 10, paddingVertical: 10, paddingHorizontal: 5 }, 
+  awardOption: { alignItems: 'center', padding: 10, borderRadius: 10, backgroundColor: '#f9f9f9', marginHorizontal: 5, width: 80, borderWidth: 1, borderColor: '#eee' },
+  bigIcon: { fontSize: 32, marginBottom: 5 },
+  awardName: { fontWeight: 'bold', color: '#333', fontSize: 12 },
+  awardCost: { color: '#007AFF', fontSize: 10, fontWeight: 'bold' },
+  cancelBtn: { padding: 10, width: '100%', alignItems: 'center', marginTop: 10 },
+  cancelText: { color: '#FF3B30', fontSize: 16 },
 
-  // --- HIGH FIDELITY DETAIL STYLES ---
-  detailContainer: { flex: 1, backgroundColor: '#000' }, // Black BG for immersive feel
-  detailTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, paddingTop: 20, backgroundColor: '#000' },
-  detailHeaderTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  closeDetailBtn: { padding: 5 },
-  detailScroll: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', minHeight: '100%' },
-  
-  detailImageContainer: { width: '100%', backgroundColor: '#000' },
-  detailImageFull: { width: '100%', height: width * 1.25, backgroundColor: '#000' }, // 4:5 Aspect Ratio
-  
-  detailBody: { padding: 20 },
-  userInfoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  detailUsername: { fontSize: 20, fontWeight: 'bold', color: '#333', marginLeft: 10 },
-  detailDate: { fontSize: 14, color: '#888', marginLeft: 10 },
-  
-  detailContext: { marginBottom: 25 },
-  detailDareTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  badgeRow: { flexDirection: 'row', gap: 10 },
-  diffBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  badgeText: { color: '#fff', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' },
-  aiBadgeDetail: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#9C27B0' },
-  aiBadgeTextDetail: { color: '#9C27B0', fontWeight: 'bold', fontSize: 12 },
+  //HIGH FIDELITY DETAIL STYLES
+  detailContainer: { flex: 1, backgroundColor: '#000' }, // Black BG for immersive feel
+  detailTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, paddingTop: 20, backgroundColor: '#000' },
+  detailHeaderTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  closeDetailBtn: { padding: 5 },
+  detailScroll: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', minHeight: '100%' },
+  
+  detailImageContainer: { width: '100%', backgroundColor: '#000' },
+  detailImageFull: { width: '100%', height: width * 1.25, backgroundColor: '#000' }, // 4:5 Aspect Ratio
+  
+  detailBody: { padding: 20 },
+  userInfoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  detailUsername: { fontSize: 20, fontWeight: 'bold', color: '#333', marginLeft: 10 },
+  detailDate: { fontSize: 14, color: '#888', marginLeft: 10 },
+  
+  detailContext: { marginBottom: 25 },
+  detailDareTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  badgeRow: { flexDirection: 'row', gap: 10 },
+  diffBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  badgeText: { color: '#fff', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' },
+  aiBadgeDetail: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#9C27B0' },
+  aiBadgeTextDetail: { color: '#9C27B0', fontWeight: 'bold', fontSize: 12 },
 
-  // Detail Map
-  detailMapCard: { borderRadius: 15, overflow: 'hidden', height: 200, borderWidth: 1, borderColor: '#eee', marginTop: 20 },
-  detailMap: { flex: 1 },
-  detailAddressBox: { flexDirection: 'row', padding: 10, backgroundColor: '#f9f9f9', alignItems: 'center', gap: 5 },
-  detailAddressText: { color: '#555', fontSize: 14, fontWeight: '600' },
+  //Detail Map
+  detailMapCard: { borderRadius: 15, overflow: 'hidden', height: 200, borderWidth: 1, borderColor: '#eee', marginTop: 20 },
+  detailMap: { flex: 1 },
+  detailAddressBox: { flexDirection: 'row', padding: 10, backgroundColor: '#f9f9f9', alignItems: 'center', gap: 5 },
+  detailAddressText: { color: '#555', fontSize: 14, fontWeight: '600' },
 
-  // --- FEED CARD STYLES ---
-  postCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 20, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.08, elevation: 3 },
-  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 15 },
-  avatarPlaceholder: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#007AFF', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  avatarInitial: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-  postUser: { fontWeight: 'bold', fontSize: 16, color: '#333' },
-  postTime: { color: '#999', fontSize: 12 },
-  deleteBtn: { padding: 5 },
-  
-  postContext: { paddingHorizontal: 15, marginBottom: 10, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
-  postTitle: { color: '#444', fontWeight: 'bold' },
-  aiBadge: { backgroundColor: '#F3E5F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 5, borderWidth: 1, borderColor: '#CE93D8' },
-  aiBadgeText: { color: '#9C27B0', fontSize: 10, fontWeight: 'bold' },
+  //FEED CARD STYLES
+  postCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 20, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.08, elevation: 3 },
+  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+  avatarPlaceholder: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#007AFF', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  avatarInitial: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  postUser: { fontWeight: 'bold', fontSize: 16, color: '#333' },
+  postTime: { color: '#999', fontSize: 12 },
+  deleteBtn: { padding: 5 },
+  
+  postContext: { paddingHorizontal: 15, marginBottom: 10, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+  postTitle: { color: '#444', fontWeight: 'bold' },
+  aiBadge: { backgroundColor: '#F3E5F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 5, borderWidth: 1, borderColor: '#CE93D8' },
+  aiBadgeText: { color: '#9C27B0', fontSize: 10, fontWeight: 'bold' },
+  
+  descriptionBox: { paddingHorizontal: 15, marginBottom: 10 },
+  descriptionText: { fontSize: 14, color: '#666', lineHeight: 20 },
 
-  postImage: { width: '100%', height: 350 }, // Taller image for better view
+  postImage: { width: '100%', height: 350 },
 
-  // REMOVED MINI MAP STYLES
+  socialBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f0f0f0', padding: 10, alignItems: 'center' },
+  socialBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 15, padding: 5 },
+  socialText: { marginLeft: 5, fontSize: 14, color: '#333', fontWeight: 'bold' },
+  awardBadge: { backgroundColor: '#f0f0f0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginRight: 4, borderWidth: 1, borderColor: '#ddd' },
 
-  socialBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f0f0f0', padding: 10, alignItems: 'center' },
-  socialBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 15, padding: 5 },
-  socialText: { marginLeft: 5, fontSize: 14, color: '#333', fontWeight: 'bold' },
-  awardBadge: { backgroundColor: '#f0f0f0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginRight: 4, borderWidth: 1, borderColor: '#ddd' },
+  tabWrapper: { backgroundColor: '#fff', padding: 10 },
+  tabContainer: { flexDirection: 'row', backgroundColor: '#F2F4F7', borderRadius: 12, padding: 4 },
+  tabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
+  activeTab: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, elevation: 2 },
+  tabText: { fontWeight: '600', color: '#999' },
+  activeTabText: { color: '#007AFF' },
 
-  tabWrapper: { backgroundColor: '#fff', padding: 10 },
-  tabContainer: { flexDirection: 'row', backgroundColor: '#F2F4F7', borderRadius: 12, padding: 4 },
-  tabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  activeTab: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, elevation: 2 },
-  tabText: { fontWeight: '600', color: '#999' },
-  activeTabText: { color: '#007AFF' },
+  contentContainer: { flex: 1, padding: 15 },
+  searchBar: { flexDirection: 'row', backgroundColor: '#fff', padding: 10, borderRadius: 10, alignItems: 'center', marginBottom: 15, borderWidth: 1, borderColor: '#eee' },
+  input: { marginLeft: 10, flex: 1, fontSize: 16 },
 
-  contentContainer: { flex: 1, padding: 15 },
-  searchBar: { flexDirection: 'row', backgroundColor: '#fff', padding: 10, borderRadius: 10, alignItems: 'center', marginBottom: 15, borderWidth: 1, borderColor: '#eee' },
-  input: { marginLeft: 10, flex: 1, fontSize: 16 },
-
-  leaderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 12, marginBottom: 8, shadowColor: '#000', shadowOpacity: 0.05, elevation: 1 },
-  rankBadge: { width: 30, alignItems: 'center' },
-  rankNum: { fontWeight: 'bold', color: '#666' },
-  leaderName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 10 },
-  scoreText: { fontWeight: 'bold', color: '#007AFF' },
-  
-  emptyText: { textAlign: 'center', marginTop: 30, color: '#999', fontSize: 16 },
+  leaderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 12, marginBottom: 8, shadowColor: '#000', shadowOpacity: 0.05, elevation: 1 },
+  rankBadge: { width: 30, alignItems: 'center' },
+  rankNum: { fontWeight: 'bold', color: '#666' },
+  leaderName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 10 },
+  scoreText: { fontWeight: 'bold', color: '#007AFF' },
+  
+  emptyText: { textAlign: 'center', marginTop: 30, color: '#999', fontSize: 16 },
 });
 
 export default CommunityScreen;

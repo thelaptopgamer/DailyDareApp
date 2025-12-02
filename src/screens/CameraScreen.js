@@ -1,5 +1,5 @@
-// src/screens/CameraScreen.js
-// Purpose: Captures Photo + GPS, saves metadata (including AI tags).
+//src/screens/CameraScreen.js
+//Purpose: Captures Photo + GPS, saves metadata (including dare description).
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
@@ -14,6 +14,7 @@ import { auth, db } from '../firebaseConfig';
 import { completeDailyDare } from '../dailyDareUtils';
 
 const CameraScreen = ({ navigation, route }) => {
+  //Retrieve the specific dare object passed from the previous screen
   const { dare } = route.params || {}; 
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -27,6 +28,7 @@ const CameraScreen = ({ navigation, route }) => {
   
   const cameraRef = useRef(null);
 
+  //Request necessary permissions on mount
   useEffect(() => {
     (async () => {
       if (!permission?.granted) await requestPermission();
@@ -34,18 +36,21 @@ const CameraScreen = ({ navigation, route }) => {
     })();
   }, []);
 
+  //Captures the photo and immediately fetches the user's current location
   const takePicture = async () => {
     if (cameraRef.current) {
       try {
         const photoData = await cameraRef.current.takePictureAsync({ 
-            quality: 0.7, 
+            quality: 0.7,
             skipProcessing: true 
         });
         setPhoto(photoData.uri);
 
+        //Fetch GPS coordinates
         let locationData = await Location.getCurrentPositionAsync({});
         setLocation(locationData.coords);
 
+        // everse Geocode to get a readable address
         let reverseGeocode = await Location.reverseGeocodeAsync({
             latitude: locationData.coords.latitude,
             longitude: locationData.coords.longitude
@@ -53,6 +58,7 @@ const CameraScreen = ({ navigation, route }) => {
 
         if (reverseGeocode.length > 0) {
             const place = reverseGeocode[0];
+            //Fallback to 'Unknown' if specific street data isn't available
             const addressString = `${place.name || place.street || 'Unknown'}, ${place.city || ''}`;
             setAddress(addressString);
         }
@@ -62,6 +68,7 @@ const CameraScreen = ({ navigation, route }) => {
     }
   };
 
+  //Uploads the image to Firebase Storage and creates a Post document in Firestore
   const handlePostToCommunity = async () => {
     if (!photo) return;
     setUploading(true);
@@ -76,6 +83,7 @@ const CameraScreen = ({ navigation, route }) => {
     let finalImageURL = null;
 
     try {
+      //Upload Image to Storage
       try {
           const response = await fetch(photo);
           const blob = await response.blob();
@@ -90,19 +98,19 @@ const CameraScreen = ({ navigation, route }) => {
           finalImageURL = "https://img.freepik.com/free-vector/trophy-flat-style_78370-3222.jpg"; 
       }
 
-      // SAVE POST TO FIRESTORE
+      //Create Post Document in Firestore
       await addDoc(collection(db, 'CommunityPosts'), {
         userId: user.uid,
         userDisplayName: user.email ? user.email.split('@')[0] : 'Anonymous',
         dareTitle: dare?.title || 'Daily Challenge',
+        dareDescription: dare?.description || '', // ADDED DESCRIPTION FIELD
         dareDifficulty: dare?.difficulty || 'Medium',
         dareId: dare?.dareId || 'unknown',
         imageURL: finalImageURL,
         
-        // --- NEW LINE: SAVE THE TAGS ---
+        //Pass specific flags if this was an AI-generated dare
         isAI: dare?.isAI || false, 
         tags: dare?.tags || [],    
-        // ------------------------------
 
         location: location ? {
           latitude: location.latitude,
@@ -115,17 +123,9 @@ const CameraScreen = ({ navigation, route }) => {
         pointsAwarded: dare?.points || 0
       });
 
-      // Award Points
+      //Award Points to User
       if (dare) {
-        // Note: For AI dares, we might not save to the "DailyDares" array in User object the same way,
-        // but completeDailyDare usually expects a dareID that exists in the daily list.
-        // For AI dares (which are "bonus"), we might just want to update score directly.
-        // However, to keep it simple and not crash, we call it. It might return false if ID not found, 
-        // but we already updated the post.
-        
-        // Ideally, we just increment score manually if it's an AI dare, 
-        // but let's stick to the current flow to prevent logic errors.
-        await completeDailyDare(dare.dareId, dare.points);
+        await completeDailyDare(dare.dareId, dare.points, dare.isAI);
       }
 
       Alert.alert("Success!", "Your dare has been posted!");
@@ -162,6 +162,7 @@ const CameraScreen = ({ navigation, route }) => {
             {address && <Text style={styles.addressText}>📍 {address}</Text>}
         </View>
 
+        {/* Viewfinder Area */}
         <View style={styles.cameraFrame}>
             {photo ? (
                 <Image source={{ uri: photo }} style={styles.cameraView} resizeMode="cover" />
@@ -172,6 +173,7 @@ const CameraScreen = ({ navigation, route }) => {
 
         <View style={styles.controlsArea}>
             {photo ? (
+                //PREVIEW MODE CONTROLS
                 uploading ? (
                     <ActivityIndicator size="large" color="#4CAF50" />
                 ) : (
@@ -188,6 +190,7 @@ const CameraScreen = ({ navigation, route }) => {
                     </View>
                 )
             ) : (
+                //CAMERA MODE CONTROLS
                 <>
                     <View style={styles.zoomRow}>
                         <TouchableOpacity onPress={decreaseZoom}><Ionicons name="remove-circle-outline" size={30} color="#fff" /></TouchableOpacity>
@@ -208,7 +211,7 @@ const CameraScreen = ({ navigation, route }) => {
 export default CameraScreen;
 
 const { width } = Dimensions.get('window');
-const FRAME_HEIGHT = width * 1.33; 
+const FRAME_HEIGHT = width * 1.33; //4:3
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'black', alignItems: 'center' },

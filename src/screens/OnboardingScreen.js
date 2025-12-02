@@ -1,5 +1,6 @@
-// src/screens/OnboardingScreen.js
-// Purpose: High-Fidelity Onboarding with Interest Selection matching the Auth Theme.
+//src/screens/OnboardingScreen.js
+//Handles the initial user setup wizard.
+//Collects user interests and explains the game rules before entering the main app.
 
 import React, { useState } from 'react';
 import { 
@@ -10,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 
-// Define the available tags for personalization
+//Available interest tags for personalization logic
 const INTEREST_TAGS = [
     "Social", "Fitness", "Creative", "Health", 
     "Habit", "Productivity", "Discomfort", "Environment",
@@ -23,7 +24,7 @@ const OnboardingScreen = () => {
     const [selectedInterests, setSelectedInterests] = useState([]); 
     const totalSteps = 3; 
 
-    // Handle toggling tags on/off
+    //Toggles a tag in the selected array
     const toggleInterest = (tag) => {
         if (selectedInterests.includes(tag)) {
             setSelectedInterests(selectedInterests.filter(t => t !== tag));
@@ -32,6 +33,7 @@ const OnboardingScreen = () => {
         }
     };
 
+    //Finalizes setup: Saves preferences to Firestore and marks onboarding as complete
     const finishOnboarding = async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -41,19 +43,20 @@ const OnboardingScreen = () => {
         
         try {
             await updateDoc(userDocRef, {
-                onboardingComplete: true,
+                onboardingComplete: true, //Triggers the App.js listener to switch stacks
                 interests: selectedInterests, 
             });
         } catch (error) {
-            console.error("Error marking onboarding complete:", error);
-            Alert.alert("Error", "Could not save your preferences.");
+            console.error("Onboarding Error:", error);
+            Alert.alert("Error", "Could not save your preferences. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Render Content Based on the Step
+    //Renders the specific content for the current step
     const renderContent = () => {
+        //Interest Selection
         if (step === 1) {
             return (
                 <View>
@@ -81,7 +84,9 @@ const OnboardingScreen = () => {
                     </View>
                 </View>
             );
-        } else if (step === 2) {
+        } 
+        //Rules & Mechanics
+        else if (step === 2) {
             return (
                 <View>
                     <Text style={styles.cardHeader}>Step 2: How it Works</Text>
@@ -89,6 +94,7 @@ const OnboardingScreen = () => {
                         You get 3 balanced challenges every day (Easy, Medium, Hard).
                     </Text>
                     
+                    {/* Feature: Points */}
                     <View style={styles.ruleBox}>
                         <View style={[styles.iconBox, {backgroundColor: '#FFF8E1'}]}>
                             <Ionicons name="trophy" size={24} color="#FFD700" />
@@ -99,6 +105,7 @@ const OnboardingScreen = () => {
                         </View>
                     </View>
 
+                    {/* Feature: Rerolls */}
                     <View style={styles.ruleBox}>
                         <View style={[styles.iconBox, {backgroundColor: '#E6F0FF'}]}>
                             <Ionicons name="dice" size={24} color="#007AFF" />
@@ -109,6 +116,7 @@ const OnboardingScreen = () => {
                         </View>
                     </View>
 
+                    {/* Feature: Community */}
                     <View style={styles.ruleBox}>
                         <View style={[styles.iconBox, {backgroundColor: '#E8F5E9'}]}>
                             <Ionicons name="people" size={24} color="#4CAF50" />
@@ -120,7 +128,9 @@ const OnboardingScreen = () => {
                     </View>
                 </View>
             );
-        } else if (step === totalSteps) {
+        } 
+        //Completion
+        else if (step === totalSteps) {
             return (
                 <View style={{alignItems: 'center'}}>
                     <Ionicons name="rocket" size={60} color="#007AFF" style={{marginBottom: 20}} />
@@ -140,7 +150,7 @@ const OnboardingScreen = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 
-                {/* HEADER (Branding) */}
+                {/* Header Branding */}
                 <View style={styles.headerContainer}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="flash" size={40} color="#007AFF" />
@@ -149,11 +159,11 @@ const OnboardingScreen = () => {
                     <Text style={styles.tagline}>Let's personalize your experience.</Text>
                 </View>
 
-                {/* MAIN CARD */}
+                {/* Main Content Card */}
                 <View style={styles.card}>
                     {renderContent()}
 
-                    {/* NAVIGATION BUTTONS */}
+                    {/* Navigation Buttons (Back / Next / Finish) */}
                     <View style={styles.buttonRow}>
                         {step > 1 && (
                             <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)} disabled={loading}>
@@ -181,7 +191,7 @@ const OnboardingScreen = () => {
                     </View>
                 </View>
 
-                {/* PROGRESS DOTS */}
+                {/* Step Indicators */}
                 <View style={styles.dotsContainer}>
                     {[1, 2, 3].map((s) => (
                         <View key={s} style={[styles.dot, step === s && styles.activeDot]} />
@@ -193,9 +203,8 @@ const OnboardingScreen = () => {
     );
 };
 
-// STYLES (High Fidelity - Blue Theme)
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#007AFF' }, // Brand Blue
+    container: { flex: 1, backgroundColor: '#007AFF' },
     scrollContainer: { flexGrow: 1, padding: 20, justifyContent: 'center' },
 
     headerContainer: { alignItems: 'center', marginBottom: 20, marginTop: 10 },
@@ -230,13 +239,13 @@ const styles = StyleSheet.create({
     tagText: { color: '#555', fontWeight: '600', fontSize: 14 },
     tagTextSelected: { color: '#fff' },
 
-    // Rules Styling
+    //Rules Styling
     ruleBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, padding: 10, backgroundColor: '#FAFAFA', borderRadius: 12, borderWidth: 1, borderColor: '#eee' },
     iconBox: { padding: 10, borderRadius: 10, marginRight: 15 },
     ruleTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     ruleDesc: { fontSize: 14, color: '#777' },
 
-    // Buttons
+    //Buttons
     buttonRow: { flexDirection: 'row', marginTop: 20, gap: 15, justifyContent: 'center' },
     actionButton: { flex: 1, backgroundColor: '#007AFF', padding: 16, borderRadius: 12, alignItems: 'center' },
     startButton: { flex: 1, backgroundColor: '#4CAF50', padding: 16, borderRadius: 12, alignItems: 'center' },
@@ -245,7 +254,7 @@ const styles = StyleSheet.create({
     actionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     backButtonText: { color: '#555', fontWeight: 'bold', fontSize: 16 },
 
-    // Progress Dots
+    //Progress Dots
     dotsContainer: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
     dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.3)' },
     activeDot: { backgroundColor: '#fff', width: 25 },

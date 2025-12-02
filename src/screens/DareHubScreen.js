@@ -1,5 +1,6 @@
-// src/screens/DareHubScreen.js
-// Purpose: Dashboard. NOW INCLUDES DAILY RESET TRIGGER.
+//src/screens/DareHubScreen.js
+//Purpose: The main dashboard where users see their daily dares, score, and weather.
+//Also serves as the gateway to the "Overtime" mode once daily tasks are complete.
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,8 +13,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location'; 
 import { Ionicons } from '@expo/vector-icons';
 
-// --- IMPORTS ---
-// ADDED: assignDailyDare to the import list
+//Core logic imports
 import { rerollDailyDare, useSkipToGainReroll, assignDailyDare } from '../dailyDareUtils';
 
 const DareHubScreen = ({ navigation }) => {
@@ -25,22 +25,23 @@ const DareHubScreen = ({ navigation }) => {
   const [weather, setWeather] = useState(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
 
+  //Checks if all 3 daily dares are marked as 'completed'
   const allDaresCompleted = dailyDares.length > 0 && dailyDares.every(dare => dare.completed);
 
-  // 1. NEW: TRIGGER DAILY ASSIGNMENT CHECK ON LOAD
+  //Daily Assignment Check
+  //Runs on mount to see if it's a new day and new dares need to be generated.
   useEffect(() => {
     const checkDailyDares = async () => {
         const user = auth.currentUser;
         if (user) {
-            // This function checks the date. If it's a new day, it generates new dares.
-            // If it's the same day, it does nothing. Safe to call every time.
             await assignDailyDare();
         }
     };
     checkDailyDares();
   }, []);
 
-  // 2. FETCH USER DATA (Real-time Listener)
+  //Real-time User Data Listener
+  //Automatically updates the UI when points, tokens, or dare status changes in Firestore.
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) { setLoading(false); return; }
@@ -58,7 +59,8 @@ const DareHubScreen = ({ navigation }) => {
     return () => unsubscribe();
   }, []);
 
-  // 3. FETCH WEATHER API
+  //Weather API Integration
+  //Fetches local weather to help users decide if they can do outdoor dares.
   useEffect(() => {
     (async () => {
       try {
@@ -80,7 +82,7 @@ const DareHubScreen = ({ navigation }) => {
     })();
   }, []);
 
-  // --- HANDLERS ---
+  //HANDLERS
 
   const navigateToDetail = (dare) => {
     navigation.navigate('DareDetail', { dare: dare });
@@ -119,11 +121,11 @@ const DareHubScreen = ({ navigation }) => {
 
   if (loading) return <View style={styles.loadingCenter}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
-  // --- RENDER ---
+  //RENDER
   return (
     <View style={styles.mainContainer}>
       
-      {/* 1. BLUE HEADER */}
+      {/* Dashboard Header */}
       <View style={styles.headerBackground}>
         <SafeAreaView>
             <View style={styles.headerContent}>
@@ -141,7 +143,7 @@ const DareHubScreen = ({ navigation }) => {
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={{paddingBottom: 40}}>
         
-        {/* 2. WEATHER WIDGET */}
+        {/* Weather Widget */}
         <View style={styles.weatherCard}>
             {loadingWeather ? (
                 <ActivityIndicator color="#007AFF" />
@@ -162,7 +164,7 @@ const DareHubScreen = ({ navigation }) => {
 
         <Text style={styles.sectionTitle}>Today's Challenges</Text>
 
-        {/* 3. DARE CARDS */}
+        {/* Daily Dares List */}
         {dailyDares.map((dare, index) => (
           <View key={index} style={[styles.dareCard, dare.completed && styles.dareCompleted]}>
             <View style={styles.cardHeader}>
@@ -179,7 +181,7 @@ const DareHubScreen = ({ navigation }) => {
             <Text style={styles.dareTitle}>{dare.title}</Text>
             <Text style={styles.dareDesc}>{dare.description}</Text>
 
-            {/* ACTION ROW */}
+            {/* Action Buttons: Only show if not completed */}
             {!dare.completed ? (
               <View style={styles.actionRow}>
                 <TouchableOpacity style={styles.startButton} onPress={() => navigateToDetail(dare)}>
@@ -204,7 +206,7 @@ const DareHubScreen = ({ navigation }) => {
           </View>
         ))}
 
-        {/* 4. OVERTIME PORTAL (Purple Theme) */}
+        {/* Overtime Portal (Locked until daily tasks are done) */}
         <TouchableOpacity 
             style={[styles.overtimeContainer, !allDaresCompleted && styles.overtimeLocked]}
             onPress={() => {
@@ -230,7 +232,7 @@ const DareHubScreen = ({ navigation }) => {
               </View>
         </TouchableOpacity>
 
-        {/* 5. SHOP SECTION */}
+        {/* Shop Section */}
         <View style={styles.shopCard}>
              <View style={styles.shopIcon}>
                 <Ionicons name="cart" size={24} color="#007AFF" />
@@ -272,7 +274,7 @@ const styles = StyleSheet.create({
   weatherDesc: { color: '#666', fontSize: 14 },
   weatherIconBox: { backgroundColor: '#FF9500', padding: 10, borderRadius: 50 },
 
-  // Overtime Container (Purple Theme)
+  //Overtime Container
   overtimeContainer: { backgroundColor: '#F3E5F5', borderRadius: 16, padding: 15, marginBottom: 15, borderLeftWidth: 4, borderLeftColor: '#9C27B0' },
   overtimeLocked: { backgroundColor: '#e0e0e0', borderLeftColor: '#999' },
   overtimeHeader: { flexDirection: 'row', alignItems: 'center' },

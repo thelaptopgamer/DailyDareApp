@@ -1,5 +1,6 @@
-// src/screens/LoginScreen.js
-// Purpose: High-Fidelity Login Screen with polished UI and branding.
+//src/screens/LoginScreen.js
+//Handles user authentication via Firebase Auth.
+//Features a high-fidelity UI with consistent branding and error handling.
 
 import React, { useState } from 'react';
 import { 
@@ -15,14 +16,20 @@ const LoginScreen = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
+    //Processes the login request
     const handleLogin = async () => {
+        //Validation
         if (!email || !password) {
             Alert.alert("Missing Info", "Please fill in both Email and Password.");
             return;
         }
+        
         setLoading(true);
+        
+        //Authentication Attempt
         try {
             await signInWithEmailAndPassword(auth, email, password);
+            //On success, the onAuthStateChanged listener in App.js will handle redirection.
             console.log("User logged in successfully.");
         } catch (error) {
             Alert.alert("Login Failed", "Incorrect email or password.");
@@ -38,7 +45,7 @@ const LoginScreen = ({ navigation }) => {
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 
-                {/* BRANDING SECTION */}
+                {/* Branding Section: Logo and Tagline */}
                 <View style={styles.headerContainer}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="flash" size={50} color="#007AFF" />
@@ -47,11 +54,11 @@ const LoginScreen = ({ navigation }) => {
                     <Text style={styles.tagline}>Challenge Your Limits</Text>
                 </View>
 
-                {/* LOGIN CARD */}
+                {/* Login Form Card */}
                 <View style={styles.card}>
                     <Text style={styles.cardHeader}>Welcome Back</Text>
 
-                    {/* EMAIL */}
+                    {/* Email Input */}
                     <View style={styles.inputContainer}>
                         <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
                         <TextInput
@@ -65,7 +72,7 @@ const LoginScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    {/* PASSWORD */}
+                    {/* Password Input */}
                     <View style={styles.inputContainer}>
                         <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
                         <TextInput
@@ -78,7 +85,7 @@ const LoginScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    {/* ACTION BUTTON */}
+                    {/* Submit Button */}
                     <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
                         {loading ? (
                             <ActivityIndicator color="#fff" />
@@ -88,7 +95,7 @@ const LoginScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* FOOTER */}
+                {/* Footer: Navigation to Signup */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Don't have an account?</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
@@ -102,7 +109,7 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#007AFF' }, // Brand Blue Background
+    container: { flex: 1, backgroundColor: '#007AFF' },
     scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: 20 },
     
     headerContainer: { alignItems: 'center', marginBottom: 40, marginTop: 40 },

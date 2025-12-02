@@ -1,5 +1,6 @@
 //src/screens/DareDetailScreen.js
-//Purpose: Displays dare details, a live GPS map of the user's location, and submission options.
+//Purpose: Displays the full details of a specific dare, including its GPS requirements.
+//Allows users to initiate the camera flow to submit proof.
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -17,17 +18,17 @@ import MapView, { Marker } from 'react-native-maps';
 import { completeDailyDare } from '../dailyDareUtils'; 
 
 const DareDetailScreen = ({ navigation, route }) => {
-    // Retrieves the dare object passed from the Dashboard
+    //Extract the dare object from navigation parameters
     const { dare } = route.params;
 
-    // State for Location and Map
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
 
-    // FETCH LOCATION ON MOUNT
+    //Fetch user's current location on mount to show context on the map
     useEffect(() => {
         (async () => {
+            //Request permissions first
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 setErrorMsg('Permission to access location was denied');
@@ -36,6 +37,7 @@ const DareDetailScreen = ({ navigation, route }) => {
             }
 
             try {
+                //Get high-accuracy location
                 let currentLocation = await Location.getCurrentPositionAsync({});
                 setLocation(currentLocation.coords);
             } catch (error) {
@@ -46,20 +48,20 @@ const DareDetailScreen = ({ navigation, route }) => {
         })();
     }, []);
 
-    // Final Completion Logic (Simulates score update after proof)
+    //Handles the manual completion logic
     const finalizeDareCompletion = async () => {
         const success = await completeDailyDare(dare.dareId, dare.points); 
         
         if (success) {
             Alert.alert("Success!", `${dare.points} points awarded. Dare completed!`);
-            navigation.popToTop(); // Navigates back to Dashboard
+            navigation.popToTop(); // Return to Dashboard
         } else {
-            Alert.alert("Error", "Could not complete dare.");
+            Alert.alert("Error", "Could not complete dare. Please try again.");
         }
     };
 
+    //Navigates to the Camera screen, passing the current dare object
     const handleCameraClick = () => {
-        // Navigates to the Camera Screen to take a photo for the feed
         navigation.navigate('CameraScreen', { dare });
     };
 
@@ -71,7 +73,7 @@ const DareDetailScreen = ({ navigation, route }) => {
                 
                 <Text style={styles.points}>Reward: {dare.points} Points</Text>
                 
-                {/* --- MAP SECTION (VISUAL GPS) --- */}
+                {/* Visual GPS Confirmation */}
                 <View style={styles.mapContainer}>
                     {loadingLocation ? (
                         <View style={styles.loadingBox}>
@@ -84,10 +86,10 @@ const DareDetailScreen = ({ navigation, route }) => {
                             initialRegion={{
                                 latitude: location.latitude,
                                 longitude: location.longitude,
-                                latitudeDelta: 0.005, // Zoom level (smaller is closer)
+                                latitudeDelta: 0.005,
                                 longitudeDelta: 0.005,
                             }}
-                            showsUserLocation={true} // Shows the blue dot
+                            showsUserLocation={true}
                         >
                             <Marker
                                 coordinate={{
@@ -105,16 +107,15 @@ const DareDetailScreen = ({ navigation, route }) => {
                         </View>
                     )}
                 </View>
-                {/* -------------------------------- */}
 
                 <View style={styles.buttonContainer}>
-                    {/* OPTIONAL CAMERA / SHARE BUTTON */}
+                    {/* Primary Action: Take Proof Photo */}
                     <TouchableOpacity style={styles.cameraButton} onPress={handleCameraClick}>
                         <Ionicons name="camera" size={24} color="white" />
                         <Text style={styles.buttonText}>Share a Photo (Optional)</Text>
                     </TouchableOpacity>
 
-                    {/* COMPLETE DARE BUTTON (Now a full styled button) */}
+                    {/* Secondary Action: Manual Completion */}
                     <TouchableOpacity style={styles.completeButton} onPress={finalizeDareCompletion}>
                         <Ionicons name="checkmark-circle" size={24} color="white" />
                         <Text style={styles.buttonText}>Complete Dare</Text>
@@ -133,10 +134,10 @@ const styles = StyleSheet.create({
     description: { fontSize: 16, textAlign: 'center', marginBottom: 20, color: '#555' },
     points: { fontSize: 20, color: '#4CAF50', marginBottom: 20, fontWeight: '700' },
 
-    // Map Styles
+    //Map Styling
     mapContainer: {
         width: '100%',
-        height: 200, // Fixed height for the map card
+        height: 200, 
         borderRadius: 15,
         overflow: 'hidden',
         marginBottom: 20,
@@ -169,13 +170,12 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
 
-    // Buttons
     buttonContainer: { width: '100%', alignItems: 'center' },
     
-    // Blue "Camera" Button
+    //Button Styles
     cameraButton: {
         flexDirection: 'row',
-        backgroundColor: '#007AFF', // Blue
+        backgroundColor: '#007AFF', 
         padding: 15,
         borderRadius: 8,
         alignItems: 'center',
@@ -188,10 +188,9 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     
-    // Green "Complete" Button
     completeButton: {
         flexDirection: 'row',
-        backgroundColor: '#4CAF50', // Green
+        backgroundColor: '#4CAF50', 
         padding: 15,
         borderRadius: 8,
         alignItems: 'center',

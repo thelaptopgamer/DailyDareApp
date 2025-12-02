@@ -1,52 +1,56 @@
-// App.js
-// Purpose: Root component. Handles Firebase connection and switches between Auth and Main App tabs.
+//App.js
+//Purpose: Root component. Wraps the app in necessary providers (like SafeAreaProvider)
+//and handles authentication routing.
 
 import 'firebase/auth';
 import 'firebase/firestore';
 
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { View, StyleSheet } from 'react-native'; // Removed ActivityIndicator import
+import { View, StyleSheet } from 'react-native'; 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+//Import custom navigation stacks and initial screen
 import AuthStack from './src/AuthStack.js'; 
 import AppTabs from './src/AppTabs.js'; 
-import LoadingScreen from './src/screens/LoadingScreen.js'; // Import the new screen
+import LoadingScreen from './src/screens/LoadingScreen.js'; 
+
+//Import Firebase auth instance
 import { auth } from './src/firebaseConfig.js';
 import { seedDares } from './src/firestoreUtils.js';
 
 export default function App() {
-  // Tracks user's login status
+  //State to control initial loading/splash screen display
   const [initializing, setInitializing] = useState(true); 
+  //State to hold the current authenticated Firebase user object
   const [user, setUser] = useState(null); 
 
-  //Callback function for when Firebase status changes
   function onAuthStateChanged(user) {
     setUser(user);
     if (initializing) {
-        // Optional: Add a small delay so the logo doesn't just flash for 100ms
         setTimeout(() => setInitializing(false), 1500); 
     }
   }
 
-  //Sets up the initial authentication listener
   useEffect(() => {
     const subscriber = auth.onAuthStateChanged(onAuthStateChanged);
     return subscriber;
   }, []);
 
-
-  // Show the Polished Loading Screen during initial check
   if (initializing) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
-      {/* If 'user' exists, show AppTabs; otherwise, show AuthStack */}
-      {user ? <AppTabs /> : <AuthStack />}
-    </NavigationContainer>
+    //Wrap the entire application in SafeAreaProvider
+    <SafeAreaProvider>
+        <NavigationContainer>
+        {/* Conditional rendering based on authentication status */}
+        {user ? <AppTabs /> : <AuthStack />}
+        </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  // No styles needed here anymore as LoadingScreen handles it
 });

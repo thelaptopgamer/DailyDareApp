@@ -50,13 +50,13 @@ export default function NotificationScheduler() {
         }
 
         try {
-            // Check if a reminder is already scheduled and cancel it first
+            //Check if a reminder is already scheduled and cancel it first
             const existingId = await AsyncStorage.getItem(NOTIFICATION_ID_KEY);
             if (existingId) {
                 await Notifications.cancelScheduledNotificationAsync(existingId);
             }
 
-            // AWAIT the scheduling method which returns the unique ID (a string)
+            //AWAIT the scheduling method which returns the unique ID (a string)
             const notificationId = await Notifications.scheduleNotificationAsync({
                 content: {
                     title: "⏰ Daily Dare Time!",
@@ -86,7 +86,7 @@ export default function NotificationScheduler() {
         }
     };
 
-    // cancel the scheduled notification 
+    //cancel the scheduled notification 
     const cancelDailyDare = async () => {
         const existingId = await AsyncStorage.getItem(NOTIFICATION_ID_KEY);
         if (existingId) {

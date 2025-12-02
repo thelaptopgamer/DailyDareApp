@@ -1,21 +1,26 @@
-// src/screens/AIDareScreen.js
-// Purpose: Overtime Level. "Self-Healing" AI (Debug text removed).
+//src/screens/AIDareScreen.js
+//Handles the "Overtime" mode where users can generate infinite dares using Google Gemini.
+//Implements a self-healing API call to handle model versioning automatically.
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// Load API Key
+//Access the API key securely from the environment file
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_KEY;
 
 const AIDareScreen = ({ navigation }) => {
   const [dare, setDare] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  //Stores the specific model name detected for this key
   const [workingModel, setWorkingModel] = useState(null); 
+  
+  //Tracks generated dares in this session to prevent duplicates
   const [history, setHistory] = useState([]);
 
-  // --- AUTO-DISCOVERY ON MOUNT ---
+  //On mount, query Google to find which model is currently active for our API key
   useEffect(() => {
     findWorkingModel();
   }, []);
@@ -23,40 +28,43 @@ const AIDareScreen = ({ navigation }) => {
   const findWorkingModel = async () => {
     if (!API_KEY) return;
     try {
-        console.log("DEBUG: Finding valid models...");
+        //Fetch the list of available models directly from the API
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`
         );
         const data = await response.json();
         
         if (data.models) {
-            // Filter for models that support "generateContent"
+            //Filter for models that support content generation
             const validModels = data.models.filter(m => 
                 m.supportedGenerationMethods.includes("generateContent")
             );
             
-            // Prefer Flash, then Pro, then whatever is left
+            //Prioritize Flash for speed, fallback to Pro if necessary
             const preferred = validModels.find(m => m.name.includes("flash")) || 
                               validModels.find(m => m.name.includes("pro")) || 
                               validModels[0];
 
             if (preferred) {
-                console.log("DEBUG: Auto-selected model:", preferred.name);
                 setWorkingModel(preferred.name); 
             } else {
-                console.error("DEBUG: No valid generation models found.");
-                Alert.alert("AI Config Error", "Your API Key has no access to generation models.");
+                Alert.alert("Configuration Error", "No compatible AI models found for this API key.");
             }
         }
     } catch (e) {
-        console.error("DEBUG: Failed to list models:", e);
+        console.error("Failed to retrieve model list:", e);
     }
   };
 
   const generateDare = async () => {
-    if (!API_KEY) { Alert.alert("Error", "API Key missing from .env"); return; }
+    if (!API_KEY) { 
+        Alert.alert("Error", "API Key missing. Please check your .env file."); 
+        return; 
+    }
+    
+    //Ensure we have a valid model before attempting generation
     if (!workingModel) {
-        Alert.alert("Initializing", "Still finding the best AI model. Try again in a second.");
+        Alert.alert("Initializing", "Connecting to AI service. Please try again in a moment.");
         findWorkingModel();
         return;
     }
@@ -64,15 +72,15 @@ const AIDareScreen = ({ navigation }) => {
     setLoading(true);
     setDare(null);
 
-    // 1. RANDOM DIFFICULTY
+    //Randomize difficulty to ensure variety (Easy/Medium/Hard)
     const difficulties = ["Easy", "Medium", "Hard"];
     const randomDiff = difficulties[Math.floor(Math.random() * difficulties.length)];
 
-    // 2. EXCLUSION LIST
-    const exclusionList = history.length > 0 ? `Do NOT generate these: ${history.join(', ')}.` : "";
+    //Build a prompt that excludes previously generated dares to avoid repetition
+    const exclusionList = history.length > 0 ? `Do NOT generate these dares again: ${history.join(', ')}.` : "";
 
     try {
-      // 3. DYNAMIC FETCH using the auto-detected model
+      //Use direct REST fetch to avoid SDK version conflicts
       const url = `https://generativelanguage.googleapis.com/v1beta/${workingModel}:generateContent?key=${API_KEY}`;
       
       const response = await fetch(url, {
@@ -81,10 +89,11 @@ const AIDareScreen = ({ navigation }) => {
           body: JSON.stringify({
             contents: [{
               parts: [{
+                //Prompt engineering: Force JSON output and specific structure
                 text: `Generate a fun, social, or physical dare with ${randomDiff} difficulty. 
                        ${exclusionList}
-                       Return ONLY a JSON object: { "title": "...", "description": "...", "difficulty": "${randomDiff}" }. 
-                       Do not use Markdown.`
+                       Return ONLY a raw JSON object: { "title": "...", "description": "...", "difficulty": "${randomDiff}" }. 
+                       Do not use Markdown formatting.`
               }]
             }]
           })
@@ -94,14 +103,13 @@ const AIDareScreen = ({ navigation }) => {
       const result = await response.json();
 
       if (result.error) {
-          console.error("API ERROR:", result.error);
-          throw new Error(result.error.message || "Request Failed");
+          throw new Error(result.error.message || "API Request Failed");
       }
 
       let text = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) throw new Error("Empty response from AI");
 
-      // Clean Markdown
+      //Remove Markdown code blocks if the AI adds them
       const firstChar = text.indexOf('{');
       const lastChar = text.lastIndexOf('}');
       if (firstChar !== -1 && lastChar !== -1) {
@@ -109,19 +117,24 @@ const AIDareScreen = ({ navigation }) => {
       }
 
       const dareData = JSON.parse(text);
+      
+      //Ensure the difficulty matches our request
       dareData.difficulty = randomDiff; 
       
       setDare(dareData);
+      
+      //Add title to history for next exclusion check
       setHistory(prev => [...prev, dareData.title]);
 
     } catch (error) {
-      console.error("DEBUG: CRITICAL ERROR:", error);
-      Alert.alert("AI Error", "Could not generate dare. Check terminal.");
+      console.error("AI Generation Error:", error);
+      Alert.alert("AI Error", "Could not generate a dare. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  //Determine points based on difficulty (50% value of standard daily dares)
   const getPoints = (difficulty) => {
       switch(difficulty) {
           case 'Easy': return 25;   
@@ -131,16 +144,17 @@ const AIDareScreen = ({ navigation }) => {
       }
   };
 
+  //Package the dare object and navigate to the Camera screen
   const handleAccept = () => {
       if (!dare) return;
       
       const fullDare = {
-          dareId: `ai_${Date.now()}`, 
+          dareId: `ai_${Date.now()}`, //Unique ID based on timestamp
           title: dare.title,
           description: dare.description,
           difficulty: dare.difficulty,
           points: getPoints(dare.difficulty), 
-          isAI: true, 
+          isAI: true, //Flag to identify this as a generated dare
           tags: ['AI Dare', 'Overtime'] 
       };
 
@@ -167,8 +181,8 @@ const AIDareScreen = ({ navigation }) => {
                 </Text>
             </View>
 
-            {/* DARE CARD */}
             {dare ? (
+                //Display the generated dare card
                 <View style={styles.dareCard}>
                     <View style={styles.badgeRow}>
                         <View style={styles.diffBadge}>
@@ -195,9 +209,13 @@ const AIDareScreen = ({ navigation }) => {
                     </View>
                 </View>
             ) : (
-                // EMPTY STATE
+                //Show generate button
                 <TouchableOpacity style={styles.generateBtn} onPress={generateDare} disabled={loading}>
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.genText}>Start Overtime Shift</Text>}
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.genText}>Start Overtime Shift</Text>
+                    )}
                 </TouchableOpacity>
             )}
         </ScrollView>
@@ -206,7 +224,7 @@ const AIDareScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3E5F5' }, // Light Purple BG
+    container: { flex: 1, backgroundColor: '#F3E5F5' },
     header: { flexDirection: 'row', alignItems: 'center', padding: 20 },
     backBtn: { marginRight: 15 },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#4A148C' },

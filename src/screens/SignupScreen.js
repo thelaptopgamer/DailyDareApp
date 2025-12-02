@@ -1,5 +1,5 @@
-// src/screens/SignupScreen.js
-// Purpose: High-Fidelity Signup Screen matching the Login style.
+//src/screens/SignupScreen.js
+//Handles new user registration, Firebase Auth creation, and initial Firestore data setup.
 
 import React, { useState } from 'react';
 import { 
@@ -7,10 +7,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore'; //Used for initial data setup
 import { auth, db } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { assignDailyDare } from '../dailyDareUtils';
+import { assignDailyDare } from '../dailyDareUtils'; //Used to assign first set of dares
 
 const SignupScreen = () => {
     const [email, setEmail] = useState('');
@@ -26,22 +26,26 @@ const SignupScreen = () => {
 
         setLoading(true);
         try {
+            //Create secure login record in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            //Create corresponding User document in Firestore
             const userDocRef = doc(db, 'Users', user.uid);
             await setDoc(userDocRef, {
                 email: user.email,
                 score: 0,
-                rerollTokens: 2, 
+                rerollTokens: 2, //Initial tokens provided to the user
                 daresCompletedCount: 0,
                 createdAt: new Date().toISOString(),
-                dailyDares: [],
-                onboardingComplete: false,
+                dailyDares: [], //Placeholder array for daily dares
+                onboardingComplete: false, //Flag to trigger the Onboarding flow
             });
             
+            //Assign the first set of daily dares immediately
             await assignDailyDare(); 
-            console.log("User signed up.");
+            
+            console.log("User signed up and profile initialized.");
         } catch (error) {
             Alert.alert("Signup Failed", error.message);
         } finally {
@@ -56,13 +60,15 @@ const SignupScreen = () => {
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 
+                {/* Header Branding */}
                 <View style={styles.headerContainer}>
                     <Text style={styles.appTitle}>Join the Challenge</Text>
                     <Text style={styles.tagline}>Start your daily dare journey today.</Text>
                 </View>
 
+                {/* Signup Form Card */}
                 <View style={styles.card}>
-                    {/* EMAIL */}
+                    {/* EMAIL INPUT */}
                     <View style={styles.inputContainer}>
                         <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
                         <TextInput
@@ -76,7 +82,7 @@ const SignupScreen = () => {
                         />
                     </View>
 
-                    {/* PASSWORD */}
+                    {/* PASSWORD INPUT */}
                     <View style={styles.inputContainer}>
                         <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
                         <TextInput
@@ -99,7 +105,7 @@ const SignupScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* NAVIGATION LINK */}
+                {/* Footer Navigation Link */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Already have an account?</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -146,7 +152,7 @@ const styles = StyleSheet.create({
     input: { flex: 1, height: '100%', color: '#333', fontSize: 16 },
 
     signupButton: {
-        backgroundColor: '#4CAF50', // Green for Signup
+        backgroundColor: '#4CAF50', //Green for Signup
         borderRadius: 12,
         height: 55,
         justifyContent: 'center',

@@ -1,21 +1,29 @@
-// src/dailyDareUtils.js
-// Purpose: Logic for assigning dares, rerolling, and COMPLETING them (Auto-detects AI).
+//src/dailyDareUtils.js
+//Purpose: Core game economy logic. Handles daily dare assignment, rerolls, and scoring.
+//Implements personalization and manages user data integrity in Firestore.
 
 import { db, auth } from './firebaseConfig.js';
 import { collection, doc, getDocs, getDoc, updateDoc, setDoc, query, where } from 'firebase/firestore'; 
 
-//Config
+//Game Configuration Constants
 const DARES_PER_DAY = 3; 
 const FREE_REROLLS_PER_DAY = 2; 
 const DIFFICULTY_LEVELS = ['Easy', 'Medium', 'Hard']; 
 const REROLL_COST = 50;
 
+/**
+ * Gets today's date in YYYY-MM-DD format for database comparison.
+ * @returns {string} Today's date string.
+ */
 const getTodayDate = () => {
     const d = new Date();
     return d.toISOString().split('T')[0];
 };
 
-// --- CORE FUNCTION: Assigns Dares based on User Interests ---
+/**
+ * Core function to assign 3 unique, difficulty-balanced dares to the user.
+ * Prioritizes dares based on user interests if called on a new day.
+ */
 const assignDailyDare = async () => {
     const user = auth.currentUser;
     if (!user) return null;
@@ -27,6 +35,7 @@ const assignDailyDare = async () => {
         const userDoc = await getDoc(userDocRef);
         let userData = userDoc.data();
         
+        //Initialize user document if it doesn't exist (e.g., during sign-up)
         if (!userDoc.exists()) {
             userData = {
                 score: 0, rerollTokens: FREE_REROLLS_PER_DAY, daresCompletedCount: 0,
@@ -35,27 +44,32 @@ const assignDailyDare = async () => {
             };
             await setDoc(userDocRef, userData);
         } else {
+             //Daily reset of reroll tokens
              if (userData.lastDareAssignment !== todayDate) {
                  await updateDoc(userDocRef, { rerollTokens: FREE_REROLLS_PER_DAY });
              }
         }
 
+        //If dares are already assigned for today, return existing list
         if (userData?.dailyDares?.length > 0 && userData.dailyDares[0].assignedDate === todayDate) {
             return userData.dailyDares;
         }
 
-        // SELECTION LOGIC
+        //DARE SELECTION LOGIC
         const newDailyDares = [];
         const userInterests = userData.interests || [];
         const assignedDareIds = new Set();
         
+        //Loop through Easy, Medium, Hard difficulty levels
         for (const level of DIFFICULTY_LEVELS) {
+            //Query master 'Dares' collection for current difficulty level
             const q = query(collection(db, "Dares"), where("difficulty", "==", level));
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
                 const availableDares = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                //Personalization: Filter for dares matching user interests (tags)
                 const preferredDares = availableDares.filter(dare => {
                     if (!dare.tags) return false;
                     return dare.tags.some(tag => userInterests.includes(tag));
@@ -66,6 +80,7 @@ const assignDailyDare = async () => {
 
                 const uniquePreferred = preferredDares.filter(d => !assignedDareIds.has(d.id));
                 
+                //Selection Strategy: Prioritize personalized dares over random ones
                 if (uniquePreferred.length > 0) {
                     selectedDare = uniquePreferred[Math.floor(Math.random() * uniquePreferred.length)];
                 } else if (fallbackDares.length > 0) {
@@ -73,6 +88,7 @@ const assignDailyDare = async () => {
                 }
 
                 if (selectedDare) {
+                    //Build the compact dare object for the user's daily list
                     newDailyDares.push({
                         dareId: selectedDare.id, assignedDate: todayDate, completed: false, 
                         title: selectedDare.title, description: selectedDare.description,
@@ -83,6 +99,7 @@ const assignDailyDare = async () => {
             }
         }
         
+        //Update the user document with the new dare list and today's date stamp
         await updateDoc(userDocRef, { dailyDares: newDailyDares, lastDareAssignment: todayDate });
         return newDailyDares;
 
@@ -92,7 +109,13 @@ const assignDailyDare = async () => {
     }
 };
 
-// --- FIX: UPDATED COMPLETION LOGIC ---
+/**
+ * Marks a dare as complete and updates the user's score and completion count.
+ * Handles both regular scheduled dares and dynamically generated AI dares.
+ * @param {string} dareId The ID of the dare to complete.
+ * @param {number} points The points awarded.
+ * @param {boolean} [isAI=false] Flag indicating if this is an AI-generated dare.
+ */
 const completeDailyDare = async (dareId, points, isAI = false) => {
     const user = auth.currentUser;
     if (!user || !dareId) return false;
@@ -107,32 +130,32 @@ const completeDailyDare = async (dareId, points, isAI = false) => {
         let daresCompletedCount = userData?.daresCompletedCount || 0;
         let dares = userData?.dailyDares || [];
         
-        // AUTO-DETECT AI: Check if explicitly 'isAI' OR if the ID starts with 'ai_'
+        //Safety check: Auto-detect AI dare by ID prefix as a backup if flag is missing
         const isAIDare = isAI || (typeof dareId === 'string' && dareId.startsWith('ai_'));
 
         if (isAIDare) {
+            //OPTION A: AI/Overtime Dare.
+            //Update score and count directly without touching the daily schedule array.
             console.log("Completing AI/Overtime Dare. Adding points directly.");
             currentScore += points;
             daresCompletedCount += 1;
         } else {
-            console.log("Completing Regular Dare. Updating list.");
+            //OPTION B: Regular Scheduled Dare.
+            //Find the dare in the daily list and mark its status as complete.
             const dareIndex = dares.findIndex(d => d.dareId === dareId);
             
-            // Not found in daily list? Exit.
-            if (dareIndex === -1) {
+            if (dareIndex === -1) { 
                 console.warn("Dare ID not found in daily list:", dareId);
                 return false; 
-            }
-            
-            // Already done? Exit.
-            if (dares[dareIndex].completed) return false;
+            } 
+            if (dares[dareIndex].completed) return false; //Prevent double completion
 
             dares[dareIndex].completed = true;
             currentScore += points;
             daresCompletedCount += 1;
         }
 
-        // Save changes to Firestore
+        //Save changes to Firestore
         await updateDoc(userDocRef, {
             dailyDares: dares, 
             score: currentScore, 
@@ -146,6 +169,11 @@ const completeDailyDare = async (dareId, points, isAI = false) => {
     }
 };
 
+/**
+ * Handles the logic for rerolling a dare (swapping it out for a new one).
+ * Deducts a token or points based on availability.
+ * @param {string} currentDareId The ID of the dare to be replaced.
+ */
 const rerollDailyDare = async (currentDareId) => {
     const user = auth.currentUser;
     if (!user) return { success: false, message: "User not logged in." };
@@ -161,6 +189,7 @@ const rerollDailyDare = async (currentDareId) => {
         let dares = userData?.dailyDares || [];
         let userInterests = userData?.interests || [];
 
+        //Cost calculation (Tokens > Points)
         if (availableTokens > 0) {
             availableTokens -= 1; 
         } else if (currentScore >= REROLL_COST) {
@@ -176,10 +205,12 @@ const rerollDailyDare = async (currentDareId) => {
         const daresRef = collection(db, "Dares");
         const dareSnapshot = await getDocs(daresRef);
         
+        //Find available dares of the same difficulty that aren't the current one
         const availableDares = dareSnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
             .filter(dare => dare.id !== currentDareId && dare.difficulty === originalDareDifficulty); 
 
+        //Reroll Personalization Logic: Prioritize personalized dares
         let newDare = null;
         const preferred = availableDares.filter(d => d.tags && d.tags.some(t => userInterests.includes(t)));
         
@@ -192,12 +223,14 @@ const rerollDailyDare = async (currentDareId) => {
         }
         
         const todayDate = getTodayDate();
+        //Construct the new dare object
         const newDareObject = {
             dareId: newDare.id, assignedDate: todayDate, completed: false, 
             title: newDare.title, description: newDare.description,
             points: newDare.points, difficulty: newDare.difficulty,
         };
         
+        //Replace the old dare with the new one in the user's array
         dares[dareIndex] = newDareObject;
 
         await updateDoc(userDocRef, { dailyDares: dares, rerollTokens: availableTokens, score: currentScore });
@@ -209,6 +242,8 @@ const rerollDailyDare = async (currentDareId) => {
         return { success: false, message: "Error during reroll." };
     }
 };
+
+//Allows the user to buy a reroll token using points (used in the shop).
 
 const useSkipToGainReroll = async () => {
     const user = auth.currentUser;
@@ -230,13 +265,14 @@ const useSkipToGainReroll = async () => {
         const newRerolls = currentRerolls + 1;
         const newScore = currentScore - SKIP_COST; 
 
+        //Perform the transaction
         await updateDoc(userDocRef, { rerollTokens: newRerolls, score: newScore });
 
         return { success: true, message: `Exchanged 50pts for 1 Token.`, newRerollCount: newRerolls };
 
     } catch (error) {
         console.error("Error using skip:", error);
-        return { success: false, message: "Error during exchange." };
+        return { success: false, message: "An error occurred during the skip exchange." };
     }
 };
 

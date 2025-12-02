@@ -9,7 +9,7 @@ import initialDares from './initialDares.js';
 //Constant based on the total number of dares defined in the file
 const EXPECTED_DARE_COUNT = initialDares.length; 
 
-// Checks if the Dares collection is outdated
+//Checks if the Dares collection is outdated
 const seedDares = async () => {
     try {
         const daresRef = collection(db, "Dares");
