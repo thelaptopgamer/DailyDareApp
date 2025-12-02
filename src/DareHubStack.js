@@ -1,15 +1,12 @@
 //src/DareHubStack.js
-//Purpose: Defines the Stack Navigator for the DareHub flow: Dashboard -> Detail -> Proof.
-//This implements the Stack Navigation structure
+//Purpose: Handles navigation for Dashboard -> Detail -> Camera -> AI Screen
 
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DareHubScreen from './screens/DareHubScreen';
 import DareDetailScreen from './screens/DareDetailScreen'; 
-import ProofSubmissionScreen from './screens/ProofSubmissionScreen'; 
-import CameraScreen from './screens/CameraScreen';
-
-
+import CameraScreen from './screens/CameraScreen'; 
+import AIDareScreen from './screens/AIDareScreen'; // IMPORT NEW SCREEN
 
 const Stack = createNativeStackNavigator();
 
@@ -19,28 +16,35 @@ const DareHubStack = () => {
             initialRouteName="Dashboard"
             screenOptions={{ headerBackTitleVisible: false }} 
         >
+            {/* 1. Dashboard */}
             <Stack.Screen 
                 name="Dashboard" 
                 component={DareHubScreen} 
                 options={{ headerShown: false }}
             />
-            {/* DareDetailScreen: The step where users view full instructions of the app */}
+            
+            {/* 2. Dare Details */}
             <Stack.Screen 
                 name="DareDetail" 
                 component={DareDetailScreen} 
                 options={{ title: 'Dare Overview' }}
             />
-            {/* ProofSubmissionScreen: The placeholder for the Native Feature implementation */}
-            <Stack.Screen 
-                name="ProofSubmission" 
-                component={ProofSubmissionScreen} 
-                options={{ title: 'Submit Proof' }}
-            />
-            {/* Camera */}
+            
+            {/* 3. Camera Screen */}
             <Stack.Screen 
                 name="CameraScreen" 
                 component={CameraScreen} 
-                options={{ title: 'Camera' }}
+                options={{ 
+                    title: 'Take Proof',
+                    headerShown: false 
+                }}
+            />
+
+            {/* 4. AI Bonus Round */}
+            <Stack.Screen 
+                name="AIDareScreen" 
+                component={AIDareScreen} 
+                options={{ headerShown: false }} 
             />
 
         </Stack.Navigator>

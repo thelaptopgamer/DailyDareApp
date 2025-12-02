@@ -1,20 +1,37 @@
 // src/screens/OnboardingScreen.js
-// Purpose: Implements the First Time User Experience with a multi-step questionnaire and overview.
-
+// Purpose: High-Fidelity Onboarding with Interest Selection matching the Auth Theme.
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 
+// Define the available tags for personalization
+const INTEREST_TAGS = [
+    "Social", "Fitness", "Creative", "Health", 
+    "Habit", "Productivity", "Discomfort", "Environment",
+    "Knowledge", "Discipline"
+];
+
 const OnboardingScreen = () => {
-    //Tracks the current step in the questionnaire flow
     const [step, setStep] = useState(1); 
     const [loading, setLoading] = useState(false);
+    const [selectedInterests, setSelectedInterests] = useState([]); 
     const totalSteps = 3; 
 
-    //Marks onboarding as complete in the user's Firestore profile
+    // Handle toggling tags on/off
+    const toggleInterest = (tag) => {
+        if (selectedInterests.includes(tag)) {
+            setSelectedInterests(selectedInterests.filter(t => t !== tag));
+        } else {
+            setSelectedInterests([...selectedInterests, tag]);
+        }
+    };
+
     const finishOnboarding = async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -23,11 +40,10 @@ const OnboardingScreen = () => {
         const userDocRef = doc(db, 'Users', user.uid);
         
         try {
-            //Sets the 'onboardingComplete' flag to true on Firestore
             await updateDoc(userDocRef, {
                 onboardingComplete: true,
+                interests: selectedInterests, 
             });
-            console.log("Onboarding marked complete for user.");
         } catch (error) {
             console.error("Error marking onboarding complete:", error);
             Alert.alert("Error", "Could not save your preferences.");
@@ -36,90 +52,203 @@ const OnboardingScreen = () => {
         }
     };
 
-    //Render Content Based on the Step
-    const renderQuestionnaire = () => {
+    // Render Content Based on the Step
+    const renderContent = () => {
         if (step === 1) {
             return (
-                <View style={styles.card}>
-                    <Text style={styles.stepTitle}>Step 1: Your Focus (Personalization)</Text>
-                    <Text style={styles.stepText}>What area of growth interests you most? This is used to suggest personalized dares.</Text>
+                <View>
+                    <Text style={styles.cardHeader}>Step 1: Your Focus</Text>
+                    <Text style={styles.cardText}>
+                        Select areas you want to improve. We'll prioritize dares that match these tags.
+                    </Text>
                     
-                    <Text style={styles.tipText}>[Selection buttons (Social, Fitness, Creative) will go here. Click Next to proceed.]</Text>
+                    <View style={styles.tagContainer}>
+                        {INTEREST_TAGS.map((tag) => {
+                            const isSelected = selectedInterests.includes(tag);
+                            return (
+                                <TouchableOpacity 
+                                    key={tag} 
+                                    style={[styles.tagButton, isSelected && styles.tagButtonSelected]}
+                                    onPress={() => toggleInterest(tag)}
+                                >
+                                    <Text style={[styles.tagText, isSelected && styles.tagTextSelected]}>
+                                        {tag}
+                                    </Text>
+                                    {isSelected && <Ionicons name="checkmark-circle" size={16} color="white" style={{marginLeft: 5}} />}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </View>
             );
         } else if (step === 2) {
             return (
-                <View style={styles.card}>
-                    <Text style={styles.stepTitle}>Step 2: App Overview & Rules</Text>
-                    <Text style={styles.stepText}>The Daily Dare App works by providing 3 balanced challenges (Easy/Medium/Hard) per day to disrupt monotony.</Text>
-                    <Text style={styles.stepDetail}>- Max daily score potential is **300 points** (50 + 100 + 150).</Text>
-                    <Text style={styles.stepDetail}>- You receive **2 free rerolls** daily. Extra rerolls cost 50 points.</Text>
+                <View>
+                    <Text style={styles.cardHeader}>Step 2: How it Works</Text>
+                    <Text style={styles.cardText}>
+                        You get 3 balanced challenges every day (Easy, Medium, Hard).
+                    </Text>
+                    
+                    <View style={styles.ruleBox}>
+                        <View style={[styles.iconBox, {backgroundColor: '#FFF8E1'}]}>
+                            <Ionicons name="trophy" size={24} color="#FFD700" />
+                        </View>
+                        <View>
+                            <Text style={styles.ruleTitle}>Earn Points</Text>
+                            <Text style={styles.ruleDesc}>Max 300 points daily.</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.ruleBox}>
+                        <View style={[styles.iconBox, {backgroundColor: '#E6F0FF'}]}>
+                            <Ionicons name="dice" size={24} color="#007AFF" />
+                        </View>
+                        <View>
+                            <Text style={styles.ruleTitle}>Rerolls</Text>
+                            <Text style={styles.ruleDesc}>2 Free swaps per day.</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.ruleBox}>
+                        <View style={[styles.iconBox, {backgroundColor: '#E8F5E9'}]}>
+                            <Ionicons name="people" size={24} color="#4CAF50" />
+                        </View>
+                        <View>
+                            <Text style={styles.ruleTitle}>Community</Text>
+                            <Text style={styles.ruleDesc}>Compete on the leaderboard.</Text>
+                        </View>
+                    </View>
                 </View>
             );
         } else if (step === totalSteps) {
             return (
-                <View style={styles.card}>
-                    <Text style={styles.stepTitle}>Final Step: Ready to Start?</Text>
-                    <Text style={styles.stepText}>Your account is set up and your first three personalized dares are waiting!</Text>
+                <View style={{alignItems: 'center'}}>
+                    <Ionicons name="rocket" size={60} color="#007AFF" style={{marginBottom: 20}} />
+                    <Text style={styles.cardHeader}>All Set!</Text>
+                    <Text style={styles.cardText}>
+                        Your profile is ready. Your first set of dares is waiting for you on the Dashboard.
+                    </Text>
+                    <Text style={[styles.cardText, {fontWeight: 'bold', color: '#333'}]}>
+                        "Growth happens outside your comfort zone."
+                    </Text>
                 </View>
             );
         }
-        return null;
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <Text style={styles.header}>Welcome to Daily Dare App!</Text>
                 
-                {renderQuestionnaire()}
-
-                <View style={styles.buttonRow}>
-                    {/* BACK Button */}
-                    {step > 1 && (
-                        <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)} disabled={loading}>
-                            <Text style={styles.backButtonText}>Back</Text>
-                        </TouchableOpacity>
-                    )}
-                    
-                    {/* NEXT Button */}
-                    {step < totalSteps && (
-                        <TouchableOpacity style={[styles.nextButton, step === 1 && { width: '100%' }]} onPress={() => setStep(step + 1)} disabled={loading}>
-                            <Text style={styles.nextButtonText}>Next ({step}/{totalSteps})</Text>
-                        </TouchableOpacity>
-                    )}
-                    
-                    {/* START DARING Button on final step*/}
-                    {step === totalSteps && (
-                        <TouchableOpacity style={[styles.startButton, { width: '80%' }]} onPress={finishOnboarding} disabled={loading}>
-                            <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Start Daring!'}</Text>
-                        </TouchableOpacity>
-                    )}
+                {/* HEADER (Branding) */}
+                <View style={styles.headerContainer}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="flash" size={40} color="#007AFF" />
+                    </View>
+                    <Text style={styles.appTitle}>Welcome Aboard</Text>
+                    <Text style={styles.tagline}>Let's personalize your experience.</Text>
                 </View>
+
+                {/* MAIN CARD */}
+                <View style={styles.card}>
+                    {renderContent()}
+
+                    {/* NAVIGATION BUTTONS */}
+                    <View style={styles.buttonRow}>
+                        {step > 1 && (
+                            <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)} disabled={loading}>
+                                <Text style={styles.backButtonText}>Back</Text>
+                            </TouchableOpacity>
+                        )}
+                        
+                        {step < totalSteps ? (
+                            <TouchableOpacity 
+                                style={[styles.actionButton, step === 1 && { width: '100%' }]} 
+                                onPress={() => setStep(step + 1)} 
+                                disabled={loading}
+                            >
+                                <Text style={styles.actionButtonText}>Next Step</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity 
+                                style={[styles.startButton, { width: '100%' }]} 
+                                onPress={finishOnboarding} 
+                                disabled={loading}
+                            >
+                                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>Start Daring!</Text>}
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
+                {/* PROGRESS DOTS */}
+                <View style={styles.dotsContainer}>
+                    {[1, 2, 3].map((s) => (
+                        <View key={s} style={[styles.dot, step === s && styles.activeDot]} />
+                    ))}
+                </View>
+
             </ScrollView>
         </SafeAreaView>
     );
 };
 
-//STYLESHEET
+// STYLES (High Fidelity - Blue Theme)
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f0f4f7' },
-    scrollContainer: { flexGrow: 1, padding: 30, justifyContent: 'center', alignItems: 'center' },
-    header: { fontSize: 28, fontWeight: 'bold', marginBottom: 40, textAlign: 'center', color: '#007AFF' },
-    card: { backgroundColor: '#fff', padding: 25, borderRadius: 10, width: '100%', marginBottom: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-    stepTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#333' },
-    stepText: { fontSize: 16, marginBottom: 10, lineHeight: 24, color: '#555' },
-    stepDetail: { fontSize: 14, marginLeft: 15, color: '#777', marginBottom: 5 },
-    tipText: { fontSize: 14, color: '#FF6347', marginTop: 10, fontStyle: 'italic' },
-    buttonRow: { flexDirection: 'row', justifyContent: 'center', width: '100%', marginTop: 20 }, 
+    container: { flex: 1, backgroundColor: '#007AFF' }, // Brand Blue
+    scrollContainer: { flexGrow: 1, padding: 20, justifyContent: 'center' },
+
+    headerContainer: { alignItems: 'center', marginBottom: 20, marginTop: 10 },
+    iconCircle: {
+        backgroundColor: '#fff',
+        width: 70, height: 70, borderRadius: 35,
+        justifyContent: 'center', alignItems: 'center', marginBottom: 10,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, elevation: 5,
+    },
+    appTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
+    tagline: { fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 },
+
+    // Card Styling
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 25,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 8,
+        marginBottom: 30,
+    },
+    cardHeader: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 15, textAlign: 'center' },
+    cardText: { fontSize: 16, color: '#666', lineHeight: 24, textAlign: 'center', marginBottom: 20 },
+
+    // Tag Selection
+    tagContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+    tagButton: { 
+        backgroundColor: '#f5f5f5', 
+        paddingVertical: 10, paddingHorizontal: 16, borderRadius: 25, 
+        borderWidth: 1, borderColor: '#eee', flexDirection: 'row', alignItems: 'center'
+    },
+    tagButtonSelected: { backgroundColor: '#007AFF', borderColor: '#0056b3' },
+    tagText: { color: '#555', fontWeight: '600', fontSize: 14 },
+    tagTextSelected: { color: '#fff' },
+
+    // Rules Styling
+    ruleBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, padding: 10, backgroundColor: '#FAFAFA', borderRadius: 12, borderWidth: 1, borderColor: '#eee' },
+    iconBox: { padding: 10, borderRadius: 10, marginRight: 15 },
+    ruleTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+    ruleDesc: { fontSize: 14, color: '#777' },
+
+    // Buttons
+    buttonRow: { flexDirection: 'row', marginTop: 20, gap: 15, justifyContent: 'center' },
+    actionButton: { flex: 1, backgroundColor: '#007AFF', padding: 16, borderRadius: 12, alignItems: 'center' },
+    startButton: { flex: 1, backgroundColor: '#4CAF50', padding: 16, borderRadius: 12, alignItems: 'center' },
+    backButton: { backgroundColor: '#f0f0f0', padding: 16, borderRadius: 12, alignItems: 'center', minWidth: 80 },
     
-    //Button Styles
-    nextButton: { flex: 1, backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' },
-    nextButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-    backButton: { backgroundColor: '#ccc', padding: 15, borderRadius: 8, alignItems: 'center', marginRight: 15 },
-    backButtonText: { color: '#333', fontWeight: 'bold', fontSize: 16 },
-    startButton: { backgroundColor: '#4CAF50', padding: 18, borderRadius: 8, alignItems: 'center' },
-    buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 }
+    actionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    backButtonText: { color: '#555', fontWeight: 'bold', fontSize: 16 },
+
+    // Progress Dots
+    dotsContainer: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
+    dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.3)' },
+    activeDot: { backgroundColor: '#fff', width: 25 },
 });
 
 export default OnboardingScreen;

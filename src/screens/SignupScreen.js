@@ -1,24 +1,23 @@
-//src/screens/SignupScreen.js
-//Purpose: Handles user sign-up, creates the Firebase Auth record, and initializes the user's Firestore profile.
+// src/screens/SignupScreen.js
+// Purpose: High-Fidelity Signup Screen matching the Login style.
 
 import React, { useState } from 'react';
 import { 
-    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator 
+    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform 
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { assignDailyDare } from '../dailyDareUtils'; //Function to assign the 3 daily dares
+import { assignDailyDare } from '../dailyDareUtils';
 
 const SignupScreen = () => {
-    //Manages user input and UI loading status
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
-    //Handles the entire sign-up process
     const handleSignup = async () => {
         if (!email || !password) {
             Alert.alert("Error", "Please fill in all fields.");
@@ -27,11 +26,9 @@ const SignupScreen = () => {
 
         setLoading(true);
         try {
-            //FIREBASE AUTHENTICATION: Creates the user's secure login record
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            //FIRESTORE: Creates the user's data document
             const userDocRef = doc(db, 'Users', user.uid);
             await setDoc(userDocRef, {
                 email: user.email,
@@ -43,102 +40,129 @@ const SignupScreen = () => {
                 onboardingComplete: false,
             });
             
-            //FINAL SETUP: Assigns the 3 unique dares
             await assignDailyDare(); 
-            
-            console.log("User signed up and profile initialized.");
-
+            console.log("User signed up.");
         } catch (error) {
             Alert.alert("Signup Failed", error.message);
-            console.error("Signup error:", error);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        //ScrollView allows content to scroll
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Create Your DareHub Account</Text>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.container}
+        >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                
+                <View style={styles.headerContainer}>
+                    <Text style={styles.appTitle}>Join the Challenge</Text>
+                    <Text style={styles.tagline}>Start your daily dare journey today.</Text>
+                </View>
 
-            {/* EMAIL INPUT */}
-            <TextInput
-                style={styles.input}
-                placeholder="Email" 
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor="#A0A0A0"
-            />
+                <View style={styles.card}>
+                    {/* EMAIL */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Email Address"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            placeholderTextColor="#999"
+                        />
+                    </View>
 
-            {/* PASSWORD INPUT */}
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholderTextColor="#A0A0A0"
-            />
+                    {/* PASSWORD */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            placeholderTextColor="#999"
+                        />
+                    </View>
 
-            {/* SIGN UP BUTTON */}
-            <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
-                {/* Show spinner if loading */}
-                <Text style={styles.buttonText}>{loading ? <ActivityIndicator color="#fff" /> : 'Sign Up'}</Text>
-            </TouchableOpacity>
-            
-            {/* NAVIGATION LINK */}
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.loginText}>Already have an account? Login</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                    {/* SIGN UP BUTTON */}
+                    <TouchableOpacity style={styles.signupButton} onPress={handleSignup} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>Create Account</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                {/* NAVIGATION LINK */}
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>Already have an account?</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                        <Text style={styles.loginText}>Log In</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
-// STYLESHEET
 const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
+    container: { flex: 1, backgroundColor: '#007AFF' },
+    scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+    
+    headerContainer: { alignItems: 'center', marginBottom: 30, marginTop: 20 },
+    appTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff', letterSpacing: 0.5 },
+    tagline: { fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 },
+
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 25,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#eee',
+        backgroundColor: '#f9f9f9',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        marginBottom: 15,
+        height: 55,
+    },
+    inputIcon: { marginRight: 10 },
+    input: { flex: 1, height: '100%', color: '#333', fontSize: 16 },
+
+    signupButton: {
+        backgroundColor: '#4CAF50', // Green for Signup
+        borderRadius: 12,
+        height: 55,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#f5f5f5',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginBottom: 30,
-        color: '#333',
-    },
-    input: {
-        width: '100%',
-        padding: 15,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        marginBottom: 15,
-        backgroundColor: '#fff',
-        fontSize: 16,
-    },
-    button: {
-        width: '100%',
-        backgroundColor: '#007AFF',
-        padding: 18,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    buttonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 18,
-    },
-    loginText: {
         marginTop: 10,
-        color: '#007AFF',
-        fontSize: 16,
-    }
+        shadowColor: "#4CAF50",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 4,
+    },
+    buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
+    footerText: { color: 'rgba(255,255,255,0.8)', fontSize: 16 },
+    loginText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 5, textDecorationLine: 'underline' },
 });
 
 export default SignupScreen;

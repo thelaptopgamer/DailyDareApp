@@ -6,9 +6,10 @@ import 'firebase/firestore';
 
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native'; // Removed ActivityIndicator import
 import AuthStack from './src/AuthStack.js'; 
 import AppTabs from './src/AppTabs.js'; 
+import LoadingScreen from './src/screens/LoadingScreen.js'; // Import the new screen
 import { auth } from './src/firebaseConfig.js';
 import { seedDares } from './src/firestoreUtils.js';
 
@@ -20,25 +21,22 @@ export default function App() {
   //Callback function for when Firebase status changes
   function onAuthStateChanged(user) {
     setUser(user);
-    if (initializing) setInitializing(false);
+    if (initializing) {
+        // Optional: Add a small delay so the logo doesn't just flash for 100ms
+        setTimeout(() => setInitializing(false), 1500); 
+    }
   }
 
   //Sets up the initial authentication listener
   useEffect(() => {
-    //onAuthStateChanged listens for user status changes
     const subscriber = auth.onAuthStateChanged(onAuthStateChanged);
-    
     return subscriber;
   }, []);
 
 
-  //Show loading screen during initial check
+  // Show the Polished Loading Screen during initial check
   if (initializing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -46,15 +44,9 @@ export default function App() {
       {/* If 'user' exists, show AppTabs; otherwise, show AuthStack */}
       {user ? <AppTabs /> : <AuthStack />}
     </NavigationContainer>
-    
-    
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // No styles needed here anymore as LoadingScreen handles it
 });

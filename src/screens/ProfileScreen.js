@@ -1,5 +1,5 @@
 //src/screens/ProfileScreen.js
-//Purpose: Displays the user's profile information, score, and handles logout functionality.
+//Purpose: High-Fidelity Profile Screen. "Friends" replaced with "Dares Completed".
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
@@ -7,183 +7,117 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth'; 
+import { Ionicons } from '@expo/vector-icons';
+
 const ProfileScreen = () => {
-    //Manages user data (score, tokens, completion count)
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
-
     const userEmail = auth.currentUser?.email;
-    const displayName = userEmail ? userEmail.split('@')[0] : 'Guest'; // Fallback for display name
+    const displayName = userEmail ? userEmail.split('@')[0] : 'Guest';
 
-    //Sets up the real-time listener for user profile data
     useEffect(() => {
         const user = auth.currentUser;
-        if (!user) {
+        if (!user) { setLoading(false); return; }
+        const unsubscribe = onSnapshot(doc(db, 'Users', user.uid), (docSnap) => {
+            if (docSnap.exists()) setUserData(docSnap.data());
             setLoading(false);
-            return;
-        }
-
-        const userDocRef = doc(db, 'Users', user.uid);
-
-        //Monitors the user document for real-time updates to score, tokens, etc.
-        const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setUserData(docSnap.data());
-            } else {
-                setUserData(null);
-            }
-            setLoading(false);
-        }, (error) => {
-            console.error("Error listening to user profile:", error);
-            setLoading(false);
-            Alert.alert("Error", "Could not fetch profile data.");
         });
-
-        //Stops listening when the screen is closed
         return () => unsubscribe();
     }, []); 
 
-    //Handles user logout
     const handleLogout = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error("Logout Error:", error);
-            Alert.alert("Logout Failed", "There was an issue logging you out.");
-        }
+        try { await signOut(auth); } catch (e) { Alert.alert("Error", "Logout failed"); }
     };
 
-    //Shows spinner if data is still loading
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
-            </View>
-        );
-    }
+    if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
-    //Read user stats, new users have 0 by default
     const userScore = userData?.score || 0;
     const rerollCount = userData?.rerollTokens || 0;
-    const daresCompletedCount = userData?.daresCompletedCount || 0;
-
+    const interests = userData?.interests || [];
+    
+    // CHANGED: Use daresCompletedCount instead of friends
+    const completedCount = userData?.daresCompletedCount || 0;
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
+            {/* HEADER CARD */}
+            <View style={styles.headerCard}>
+                <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
+                </View>
+                <Text style={styles.nameText}>{displayName}</Text>
+                <Text style={styles.emailText}>{userEmail}</Text>
                 
-                <View style={styles.headerContainer}>
-                    <Text style={styles.profileHeader}>My Profile</Text>
-                    <Text style={styles.usernameText}>{displayName}</Text>
+                <View style={styles.tagsRow}>
+                    {interests.slice(0, 3).map((tag, i) => (
+                        <View key={i} style={styles.tagBadge}><Text style={styles.tagText}>{tag}</Text></View>
+                    ))}
+                </View>
+            </View>
+
+            {/* STATS GRID */}
+            <View style={styles.statsContainer}>
+                {/* Total Points */}
+                <View style={styles.statBox}>
+                    <View style={[styles.iconBox, {backgroundColor:'#E6F0FF'}]}>
+                        <Ionicons name="trophy" size={24} color="#007AFF" />
+                    </View>
+                    <Text style={styles.statNum}>{userScore}</Text>
+                    <Text style={styles.statLabel}>Total Points</Text>
+                </View>
+                
+                {/* CHANGED: Dares Completed */}
+                <View style={styles.statBox}>
+                     <View style={[styles.iconBox, {backgroundColor:'#E8F5E9'}]}>
+                        <Ionicons name="checkmark-done-circle" size={24} color="#4CAF50" />
+                    </View>
+                    <Text style={styles.statNum}>{completedCount}</Text>
+                    <Text style={styles.statLabel}>Completed</Text>
                 </View>
 
-                <View style={styles.statsContainer}>
-                    {/* BLOCK 1: TOTAL POINTS */}
-                    <View style={styles.statBox}>
-                        <Text style={styles.statValue}>{userScore}</Text>
-                        <Text style={styles.statLabel}>Total Points</Text>
+                {/* Reroll Tokens */}
+                <View style={styles.statBox}>
+                     <View style={[styles.iconBox, {backgroundColor:'#FFF3E0'}]}>
+                        <Ionicons name="dice" size={24} color="#FF9500" />
                     </View>
-                    
-                    {/* BLOCK 2: REROLLS */}
-                    <View style={styles.statBox}>
-                        <Text style={styles.statValue}>{rerollCount}</Text>
-                        <Text style={styles.statLabel}>Rerolls Available</Text>
-                    </View>
-                    
-                    {/* BLOCK 3: COMPLETED DARES */}
-                    <View style={styles.statBox}>
-                        <Text style={styles.statValue}>{daresCompletedCount}</Text>
-                        <Text style={styles.statLabel}>Dares Completed</Text>
-                    </View>
+                    <Text style={styles.statNum}>{rerollCount}</Text>
+                    <Text style={styles.statLabel}>Rerolls</Text>
                 </View>
+            </View>
 
-                {/* LOGOUT BUTTON */}
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                    <Text style={styles.logoutButtonText}>Log Out</Text>
+            {/* MENU OPTIONS */}
+            <View style={styles.menuContainer}>
+                <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                    <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+                    <Text style={[styles.menuText, {color: '#FF3B30'}]}>Log Out</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 };
 
-//Stylesheet
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    container: {
-        flex: 1,
-        padding: 20,
-        alignItems: 'center',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerContainer: {
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: 30,
-    },
-    profileHeader: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    usernameText: {
-        fontSize: 18,
-        color: '#777',
-        marginTop: 5,
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        width: '100%',
-        marginBottom: 50,
-    },
-    statBox: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '30%',
-        aspectRatio: 1,
-        marginVertical: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    statValue: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#007AFF',
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#555',
-        marginTop: 5,
-        textAlign: 'center',
-    },
-    logoutButton: {
-        width: '90%',
-        backgroundColor: '#FF3B30',
-        padding: 18,
-        borderRadius: 8,
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 20,
-    },
-    logoutButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 18,
-    },
+    container: { flex: 1, backgroundColor: '#F2F4F7' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+    headerCard: { backgroundColor: '#fff', alignItems: 'center', padding: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOpacity: 0.05, elevation: 5 },
+    avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#007AFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15, shadowColor: '#007AFF', shadowOpacity: 0.3, elevation: 5 },
+    avatarText: { fontSize: 32, fontWeight: 'bold', color: '#fff' },
+    nameText: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+    emailText: { fontSize: 14, color: '#999', marginBottom: 15 },
+    tagsRow: { flexDirection: 'row', gap: 8 },
+    tagBadge: { backgroundColor: '#F2F4F7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+    tagText: { fontSize: 12, color: '#555', fontWeight: '600' },
+
+    statsContainer: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, marginTop: 10 },
+    statBox: { backgroundColor: '#fff', flex: 1, marginHorizontal: 5, padding: 15, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, elevation: 2 },
+    iconBox: { padding: 10, borderRadius: 50, marginBottom: 10 },
+    statNum: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+    statLabel: { fontSize: 12, color: '#999', marginTop: 2 },
+
+    menuContainer: { padding: 20 },
+    menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 12, marginBottom: 10 },
+    menuText: { flex: 1, marginLeft: 15, fontSize: 16, fontWeight: '500', color: '#333' },
 });
 
 export default ProfileScreen;

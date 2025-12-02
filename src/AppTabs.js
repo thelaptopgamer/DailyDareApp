@@ -1,5 +1,5 @@
 //src/AppTabs.js
-//Purpose: Controls the primary bottom navigation (Tab Navigator) and ensures stable app flow.
+//Purpose: Main Navigation Tabs. Removed duplicate Feed.
 
 import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,14 +8,10 @@ import { db, auth } from './firebaseConfig.js';
 import { doc, onSnapshot } from 'firebase/firestore'; 
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
-import DareHubStack from './DareHubStack'; //Nested stack for the DareHub flow
+import DareHubStack from './DareHubStack'; 
 import ProfileScreen from './screens/ProfileScreen';
 import CommunityScreen from './screens/CommunityScreen'; 
 import OnboardingScreen from './screens/OnboardingScreen';
-import SocialFeedScreen from './screens/SocialFeedScreen';
-import CameraScreen from './screens/CameraScreen';
-
-
 
 const Tab = createBottomTabNavigator();
 
@@ -52,7 +48,6 @@ const AppTabs = () => {
         return <OnboardingScreen />;
     }
 
-    //Renders the tab bar
     return (
         <Tab.Navigator
             initialRouteName="DareHub"
@@ -67,9 +62,6 @@ const AppTabs = () => {
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person-circle' : 'person-circle-outline';
                     } 
-                    // else if (route.name === 'Capture') { 
-                    //     iconName = focused ? 'camera' : 'camera-outline';
-                    // } 
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#007AFF', 
@@ -78,16 +70,6 @@ const AppTabs = () => {
         >
             <Tab.Screen name="DareHub" component={DareHubStack} />
             <Tab.Screen name="Community" component={CommunityScreen} />
-            <Tab.Screen 
-                name="Feed" 
-                component={SocialFeedScreen} 
-                options={{ 
-                    tabBarLabel: 'Feed',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="images-outline" size={size} color={color} />
-                    )
-                }}
-            />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
