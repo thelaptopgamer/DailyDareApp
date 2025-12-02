@@ -1,5 +1,5 @@
 // src/screens/CommunityScreen.js
-// Purpose: Social Feed. Fixed Image "Blocking" (Scaling) + Immersive Detail View.
+// Purpose: Social Feed. Clean Preview (No Map) + Detailed Modal (With Map).
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -12,9 +12,8 @@ import { db, auth } from '../firebaseConfig';
 import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, runTransaction, increment, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// --- AWARD CONFIGURATION ---
 const AWARDS = [
     { id: 'clap', icon: '👏', name: 'Applause', cost: 10 },
     { id: 'fire', icon: '🔥', name: 'Hype', cost: 25 },
@@ -220,27 +219,7 @@ const CommunityScreen = () => {
             
             <Image source={{ uri: item.imageURL }} style={styles.postImage} resizeMode="cover" />
             
-            {/* MINI MAP IN FEED */}
-            {item.location && (
-                <View style={styles.feedMapContainer}>
-                    <MapView
-                        style={styles.miniMap}
-                        initialRegion={{
-                            latitude: item.location.latitude,
-                            longitude: item.location.longitude,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                        }}
-                        scrollEnabled={false} zoomEnabled={false} pitchEnabled={false} rotateEnabled={false}
-                    >
-                        <Marker coordinate={{ latitude: item.location.latitude, longitude: item.location.longitude }} />
-                    </MapView>
-                    <View style={styles.mapOverlay}>
-                        <Ionicons name="location" size={10} color="#fff" />
-                        <Text style={styles.mapOverlayText}>{item.location.address ? item.location.address.split(',')[0] : 'Location'}</Text>
-                    </View>
-                </View>
-            )}
+            {/* REMOVED MINI MAP FROM HERE */}
 
             {/* Social Bar */}
             <View style={styles.socialBar}>
@@ -297,11 +276,10 @@ const CommunityScreen = () => {
             </TouchableOpacity>
         </Modal>
 
-        {/* --- HIGH FIDELITY DETAIL MODAL --- */}
-        <Modal visible={!!selectedPost} animationType="slide" presentationStyle="pageSheet">
+        {/* --- DETAIL MODAL (MAP IS HERE) --- */}
+        <Modal visible={!!selectedPost} animationType="slide" presentationStyle="formSheet">
             {selectedPost && (
                 <View style={styles.detailContainer}>
-                    {/* Header */}
                     <View style={styles.detailTopBar}>
                         <Text style={styles.detailHeaderTitle}>Post Details</Text>
                         <TouchableOpacity style={styles.closeDetailBtn} onPress={() => setSelectedPost(null)}>
@@ -310,8 +288,6 @@ const CommunityScreen = () => {
                     </View>
 
                     <ScrollView contentContainerStyle={styles.detailScroll}>
-                        {/* Image Full Width - UPDATED FOR "BLOCKED" FIX */}
-                        {/* Uses 'contain' to show full image, with dynamic height */}
                         <View style={styles.detailImageContainer}>
                             <Image 
                                 source={{ uri: selectedPost.imageURL }} 
@@ -320,7 +296,6 @@ const CommunityScreen = () => {
                             />
                         </View>
 
-                        {/* Content Body */}
                         <View style={styles.detailBody}>
                             <View style={styles.userInfoRow}>
                                 <View style={[styles.avatarPlaceholder, {width: 50, height: 50, borderRadius: 25}]}>
@@ -350,7 +325,7 @@ const CommunityScreen = () => {
                                 </View>
                             </View>
 
-                            {/* Location Card - PUSHED DOWN */}
+                            {/* LOCATION CARD (Only in Detail View) */}
                             {selectedPost.location && (
                                 <View style={styles.detailMapCard}>
                                     <MapView
@@ -372,7 +347,6 @@ const CommunityScreen = () => {
                                 </View>
                             )}
                             
-                            {/* Padding at bottom so Map isn't cut off */}
                             <View style={{height: 50}} />
                         </View>
                     </ScrollView>
@@ -481,11 +455,7 @@ const styles = StyleSheet.create({
 
   postImage: { width: '100%', height: 350 }, // Taller image for better view
 
-  // MINI MAP IN FEED
-  feedMapContainer: { height: 100, width: '100%', borderTopWidth: 1, borderTopColor: '#eee' },
-  miniMap: { width: '100%', height: '100%' },
-  mapOverlay: { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  mapOverlayText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  // REMOVED MINI MAP STYLES
 
   socialBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f0f0f0', padding: 10, alignItems: 'center' },
   socialBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 15, padding: 5 },

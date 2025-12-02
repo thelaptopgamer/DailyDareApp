@@ -1,5 +1,5 @@
 // src/screens/DareHubScreen.js
-// Purpose: Dashboard. Overtime Portal uses Purple Theme.
+// Purpose: Dashboard. NOW INCLUDES DAILY RESET TRIGGER.
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,7 +13,8 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 
 // --- IMPORTS ---
-import { rerollDailyDare, useSkipToGainReroll } from '../dailyDareUtils';
+// ADDED: assignDailyDare to the import list
+import { rerollDailyDare, useSkipToGainReroll, assignDailyDare } from '../dailyDareUtils';
 
 const DareHubScreen = ({ navigation }) => {
   const [dailyDares, setDailyDares] = useState([]);
@@ -21,14 +22,25 @@ const DareHubScreen = ({ navigation }) => {
   const [rerollTokens, setRerollTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // Weather State
   const [weather, setWeather] = useState(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
 
-  // Check if all dares are done (to unlock Overtime)
   const allDaresCompleted = dailyDares.length > 0 && dailyDares.every(dare => dare.completed);
 
-  // 1. FETCH USER DATA
+  // 1. NEW: TRIGGER DAILY ASSIGNMENT CHECK ON LOAD
+  useEffect(() => {
+    const checkDailyDares = async () => {
+        const user = auth.currentUser;
+        if (user) {
+            // This function checks the date. If it's a new day, it generates new dares.
+            // If it's the same day, it does nothing. Safe to call every time.
+            await assignDailyDare();
+        }
+    };
+    checkDailyDares();
+  }, []);
+
+  // 2. FETCH USER DATA (Real-time Listener)
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) { setLoading(false); return; }
@@ -46,7 +58,7 @@ const DareHubScreen = ({ navigation }) => {
     return () => unsubscribe();
   }, []);
 
-  // 2. FETCH WEATHER API
+  // 3. FETCH WEATHER API
   useEffect(() => {
     (async () => {
       try {

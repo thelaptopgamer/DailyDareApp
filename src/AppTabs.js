@@ -1,5 +1,5 @@
 //src/AppTabs.js
-//Purpose: Main Navigation Tabs. Removed duplicate Feed.
+//Purpose: Main Navigation. Now defaults to "Community" (Social First).
 
 import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -50,7 +50,8 @@ const AppTabs = () => {
 
     return (
         <Tab.Navigator
-            initialRouteName="DareHub"
+            // CHANGED: "Community" is now the first screen users see
+            initialRouteName="Community"
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
